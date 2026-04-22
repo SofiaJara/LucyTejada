@@ -135,7 +135,7 @@ export default function ResetPassword() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative h-64 bg-gradient-to-r from-purple-600 to-blue-700 overflow-hidden">
+      <section className="relative h-64 overflow-hidden" style={{ background: '#3A6048' }}>
         <div className="absolute inset-0 bg-black opacity-30"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="text-white">
@@ -178,14 +178,14 @@ export default function ResetPassword() {
           <div className="flex justify-center mb-6">
             <div className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
+                step >= 1 ? 'text-white' : 'bg-gray-200 text-gray-600'
+              }`} style={step >= 1 ? { background: '#3A6048' } : {}}>
                 1
               </div>
-              <div className={`w-12 h-1 ${step >= 2 ? 'bg-purple-600' : 'bg-gray-200'}`}></div>
+              <div className={`w-12 h-1 ${step >= 2 ? '' : 'bg-gray-200'}`} style={step >= 2 ? { background: '#3A6048' } : {}}></div>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
+                step >= 2 ? 'text-white' : 'bg-gray-200 text-gray-600'
+              }`} style={step >= 2 ? { background: '#3A6048' } : {}}>
                 2
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function ResetPassword() {
                     onChange={handleInputChange}
                     placeholder="Tu usuario o correo electrónico"
                     required
-                    className="w-full px-4 py-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pl-10"
+                    className="w-full px-4 py-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent pl-10" style={{ fontSize: 15, outlineColor: '#3A6048' }}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -220,7 +220,7 @@ export default function ResetPassword() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: '#3A6048', fontSize: 16 }}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -250,7 +250,7 @@ export default function ResetPassword() {
                   placeholder="Ingresa el PIN de 6 dígitos"
                   required
                   maxLength="6"
-                  className="w-full px-4 py-3 text-gray-800  border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center text-lg tracking-wider"
+                  className="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent text-center text-lg tracking-wider" style={{ fontSize: 15 }}
                 />
               </div>
 
@@ -267,7 +267,7 @@ export default function ResetPassword() {
                   placeholder="Mínimo 6 caracteres"
                   required
                   minLength="6"
-                  className="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent" style={{ fontSize: 15 }}
                 />
               </div>
 
@@ -283,7 +283,7 @@ export default function ResetPassword() {
                   onChange={handleInputChange}
                   placeholder="Repite la nueva contraseña"
                   required
-                  className="w-full px-4 py-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent" style={{ fontSize: 15 }}
                 />
               </div>
 
@@ -291,7 +291,7 @@ export default function ResetPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: '#3A6048', fontSize: 16 }}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
@@ -318,7 +318,7 @@ export default function ResetPassword() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               ¿Recordaste tu contraseña?{' '}
-              <Link href="/login" className="text-purple-600 hover:text-purple-800 font-medium transition-colors">
+              <Link href="/login" className="font-medium transition-colors" style={{ color: '#3A6048' }}>
                 Volver al Login
               </Link>
             </p>

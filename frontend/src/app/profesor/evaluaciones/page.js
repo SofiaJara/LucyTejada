@@ -1,5 +1,11 @@
 "use client";
 
+const C = {
+  btn: "#3A6048", btnT: "#fff",
+  head: "#1E2D26", body: "#2c3a32", muted: "#4a5a52",
+  border: "#b8cdc0", card: "#fff", divider: "#d8e8df",
+};
+
 const criteria = [
   { indicator: "Participación en clase", score: "Excelente ▾" },
   { indicator: "Práctica y ensayo",       score: "Bueno ▾" },
@@ -10,20 +16,17 @@ const criteria = [
 export default function EvaluacionesPage() {
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
-      <p style={{ fontSize: 11, color: "#888", marginBottom: 18 }}>
-        Ilustración 4. Mockup registro de evaluaciones cualitativas.
-      </p>
 
-      <h2 style={{ fontSize: 14, fontWeight: 600, color: "#333", margin: "0 0 16px" }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: C.head, margin: "0 0 20px" }}>
         Evaluación cualitativa
       </h2>
 
       {/* Selectores */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
         {["Grupo ▾", "Estudiante ▾", "Período ▾"].map((v, i) => (
           <select key={i} disabled style={{
-            padding: "6px 12px", border: "1px solid #555", borderRadius: 6,
-            fontSize: 12, color: "#555", background: "#fff", cursor: "not-allowed",
+            padding: "8px 14px", border: `1px solid ${C.border}`, borderRadius: 6,
+            fontSize: 14, color: C.body, background: C.card, cursor: "not-allowed",
           }}>
             <option>{v}</option>
           </select>
@@ -32,43 +35,43 @@ export default function EvaluacionesPage() {
 
       {/* Banda info estudiante */}
       <div style={{
-        background: "#fff", border: "1px solid #bbb", borderRadius: 6,
-        padding: "10px 16px", marginBottom: 16,
-        display: "flex", gap: 24, fontSize: 12, color: "#555",
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+        padding: "12px 18px", marginBottom: 18,
+        display: "flex", gap: 24, fontSize: 14, color: C.body,
       }}>
-        <span><strong style={{ color: "#333" }}>Estudiante:</strong> Andrés López</span>
-        <span><strong style={{ color: "#333" }}>Programa:</strong> Piano básico</span>
-        <span><strong style={{ color: "#333" }}>Grupo:</strong> A</span>
-        <span><strong style={{ color: "#333" }}>Período:</strong> 2026-1</span>
+        <span><strong style={{ color: C.head }}>Estudiante:</strong> Andrés López</span>
+        <span><strong style={{ color: C.head }}>Programa:</strong> Piano básico</span>
+        <span><strong style={{ color: C.head }}>Grupo:</strong> A</span>
+        <span><strong style={{ color: C.head }}>Período:</strong> 2026-1</span>
       </div>
 
       {/* Tabla criterios */}
-      <div style={{ background: "#fff", border: "1px solid #ddd", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", marginBottom: 18 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #aaa" }}>
+            <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
               {["Indicador de desempeño", "Valoración", "Obs."].map(h => (
                 <th key={h} style={{
-                  padding: "9px 12px", textAlign: "left", fontSize: 12,
-                  fontWeight: 600, color: "#222",
+                  padding: "11px 14px", textAlign: "left", fontSize: 14,
+                  fontWeight: 700, color: C.head,
                 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {criteria.map((c, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid #ddd" }}>
-                <td style={{ padding: "8px 12px", fontSize: 12, color: "#333" }}>{c.indicator}</td>
-                <td style={{ padding: "8px 12px" }}>
+              <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                <td style={{ padding: "10px 14px", fontSize: 14, color: C.body }}>{c.indicator}</td>
+                <td style={{ padding: "10px 14px" }}>
                   <select disabled style={{
-                    padding: "3px 8px", border: "1px solid #aaa", borderRadius: 3,
-                    fontSize: 11, color: "#888", background: "#fff", cursor: "not-allowed",
+                    padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 4,
+                    fontSize: 13, color: C.body, background: C.card, cursor: "not-allowed",
                   }}>
                     <option>{c.score}</option>
                   </select>
                 </td>
-                <td style={{ padding: "8px 12px" }}>
-                  <div style={{ width: 60, height: 18, border: "1px solid #ccc", borderRadius: 3 }} />
+                <td style={{ padding: "10px 14px" }}>
+                  <div style={{ width: 70, height: 22, border: `1px solid ${C.border}`, borderRadius: 4 }} />
                 </td>
               </tr>
             ))}
@@ -77,26 +80,27 @@ export default function EvaluacionesPage() {
       </div>
 
       {/* Comentario */}
-      <div style={{ background: "#fff", border: "1px solid #ddd", borderRadius: 8, padding: "14px 16px" }}>
-        <label style={{ fontSize: 12, color: "#555", display: "block", marginBottom: 8 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px" }}>
+        <label style={{ fontSize: 14, color: C.body, display: "block", marginBottom: 10, fontWeight: 500 }}>
           Comentario general:
         </label>
         <textarea readOnly placeholder="Escribe aquí tus observaciones generales del estudiante..."
           style={{
-            width: "100%", height: 55, border: "1px solid #aaa", borderRadius: 5,
-            fontSize: 11, color: "#bbb", padding: "6px 10px",
+            width: "100%", height: 60, border: `1px solid ${C.border}`, borderRadius: 6,
+            fontSize: 14, color: C.muted, padding: "8px 12px",
             boxSizing: "border-box", resize: "none", outline: "none",
           }} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
         <button disabled style={{
-          padding: "7px 22px", border: "1.5px solid #333", borderRadius: 6,
-          fontSize: 13, color: "#222", background: "#fff", cursor: "not-allowed",
+          padding: "9px 24px", border: "none", borderRadius: 6,
+          fontSize: 15, fontWeight: 600, color: C.btnT, background: C.btn,
+          cursor: "not-allowed", opacity: 0.7,
         }}>Guardar evaluación</button>
         <button disabled style={{
-          padding: "7px 16px", border: "1px solid #ccc", borderRadius: 6,
-          fontSize: 13, color: "#777", background: "#fff", cursor: "not-allowed",
+          padding: "9px 18px", border: `1px solid ${C.border}`, borderRadius: 6,
+          fontSize: 15, color: C.muted, background: C.card, cursor: "not-allowed",
         }}>Cancelar</button>
       </div>
     </div>
