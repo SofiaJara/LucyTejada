@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id              Int      @id @default(autoincrement())
+  documento       String   @unique
+  nombre          String
+  apellido        String
+  correo          String   @unique
+  contrasena      String
+  rol             String   // 'estudiante' | 'profesor' | 'admin'
+  telefono        String?
+  direccion       String?
+  ciudad          String?
+  barrio          String?
+  genero          String?
+  fechaNacimiento DateTime?
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  inscripciones   Inscripcion[]
+  gruposComoProfesor Grupo[]      @relation("ProfesorGrupos")
+  asistencias     Asistencia[]
+  evaluaciones    Evaluacion[]   @relation("EstudianteEvals")
+  evaluacionesHechas Evaluacion[] @relation("ProfesorEvals")
+  notificaciones  Notificacion[]
+}
+
+model Programa {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  categoria   String   // 'Música', 'Artes escénicas', 'Artes visuales', etc.
+  descripcion String?
+  duracion    String?  // Por ejemplo: '6 meses', 'Semestre'
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  grupos      Grupo[]
+}
+
+model Grupo {
+  id           Int      @id @default(autoincrement())
+  nombre       String   // 'Grupo A', 'Grupo B'
+  cupoMaximo   Int      @default(20)
+  horario      String   // 'Lun y mié · 8:00 am'
+  salon        String   // 'Salón 3 · Bloque B'
+  totalClases  Int      @default(20)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  programa     Programa @relation(fields: [programaId], references: [id])
+  programaId   Int
+  profesor     Usuario? @relation("ProfesorGrupos", fields: [profesorId], references: [id])
+  profesorId   Int?
+
+  inscripciones Inscripcion[]
+  clases        Clase[]
+  evaluaciones  Evaluacion[]
+}
+
+model Inscripcion {
+  id          Int      @id @default(autoincrement())
+  estado      String   @default("activo") // 'activo', 'inactivo', 'lista_espera'
+  fechaInscripcion DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  estudiante  Usuario  @relation(fields: [estudianteId], references: [id])
+  estudianteId Int
+  grupo       Grupo    @relation(fields: [grupoId], references: [id])
+  grupoId     Int
+
+  @@unique([estudianteId, grupoId])
+}
+
+model Clase {
+  id          Int      @id @default(autoincrement())
+  fecha       DateTime
+  tema        String?
+  observaciones String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  grupo       Grupo    @relation(fields: [grupoId], references: [id])
+  grupoId     Int
+  asistencias Asistencia[]
+}
+
+model Asistencia {
+  id          Int      @id @default(autoincrement())
+  asistio     Boolean  @default(false)
+  observacion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clase       Clase    @relation(fields: [claseId], references: [id])
+  claseId     Int
+  estudiante  Usuario  @relation(fields: [estudianteId], references: [id])
+  estudianteId Int
+
+  @@unique([claseId, estudianteId])
+}
+
+model Evaluacion {
+  id          Int      @id @default(autoincrement())
+  periodo     String   // '2026-1', '2026-2'
+  participacion String  // 'Excelente', 'Bueno', 'Regular', 'Deficiente'
+  practica    String
+  actitud     String
+  progreso    String
+  valoracionGeneral String  // calculated or final grade
+  comentario  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  estudiante  Usuario  @relation("EstudianteEvals", fields: [estudianteId], references: [id])
+  estudianteId Int
+  profesor    Usuario  @relation("ProfesorEvals", fields: [profesorId], references: [id])
+  profesorId  Int
+  grupo       Grupo    @relation(fields: [grupoId], references: [id])
+  grupoId     Int
+
+  @@unique([estudianteId, grupoId, periodo])
+}
+
+model Notificacion {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  mensaje     String
+  categoria   String   // 'horarios', 'academico', 'eventos', 'sistema', 'administrativo'
+  leida       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId   Int
+}

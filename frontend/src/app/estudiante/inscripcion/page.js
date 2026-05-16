@@ -1,6 +1,9 @@
 "use client";
+import { useEffect, useState } from "react";
+import { api } from "@/app/lib/api";
+import ConfirmModal from "@/app/components/lt/ConfirmModal";
 
-const colors = {
+const C = {
   bgPage:       "#fdfdfd",
   bgCard:       "#fff",
   bgCardOff:    "#f5f5f5",
@@ -9,100 +12,178 @@ const colors = {
   btnBg:        "#3A6048",
   btnText:      "#fff",
   btnOffBg:     "#8a9e90",
-  btnOffText:   "#fff",
   headingText:  "#1E2D26",
   labelText:    "#3A6048",
   bodyText:     "#2c3a32",
   mutedText:    "#4a5a52",
   inputBorder:  "#b8cdc0",
-  paginationBg: "#3A6048",
 };
 
-const programs = [
-  { name: "Guitarra básica", cat: "Música · Grupo C", teacher: "Prof. Sandra Gil",
-    schedule: "Mar y jue · 10:00 am", spots: 5, active: true },
-  { name: "Danza contemporánea", cat: "Artes escénicas · Grupo A", teacher: "Prof. Lina Torres",
-    schedule: "Lun y vie · 2:00 pm", spots: 0, active: false },
-  { name: "Teatro básico", cat: "Artes escénicas · Grupo B", teacher: "Prof. Camilo Arias",
-    schedule: "Mié y vie · 3:00 pm", spots: 12, active: true },
-  { name: "Artes plásticas", cat: "Artes visuales · Grupo D", teacher: "Prof. Rosa Mejía",
-    schedule: "Sáb · 9:00 am", spots: 3, active: true },
-];
-
 export default function InscripcionPage() {
-  return (
-    <div style={{ fontFamily: "Segoe UI, sans-serif", background: colors.bgPage, minHeight: "100%", padding: 4 }}>
+  const [programas, setProgramas] = useState([]);
+  const [misInscripciones, setMisInscripciones] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [seleccion, setSeleccion] = useState(null); // {programa, grupo}
+  const [modal, setModal] = useState({ open: false, title: "", message: "", type: "info" });
 
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.headingText, margin: "0 0 20px" }}>
+  const cargar = () => {
+    setLoading(true);
+    Promise.all([
+      api("/api/programas", { auth: false }),
+      api("/api/inscripciones/mias"),
+    ]).then(([progs, ins]) => {
+      setProgramas(progs);
+      setMisInscripciones(ins);
+    }).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const categorias = Array.from(new Set(programas.map(p => p.categoria)));
+
+  const filtrados = programas.filter(p => {
+    if (categoria && p.categoria !== categoria) return false;
+    if (busqueda && !p.nombre.toLowerCase().includes(busqueda.toLowerCase())) return false;
+    return true;
+  });
+
+  const yaInscritoGrupo = (grupoId) => misInscripciones.some(i => i.grupoId === grupoId);
+
+  const confirmar = async () => {
+    if (!seleccion) return;
+    try {
+      await api("/api/inscripciones", { method: "POST", body: { grupoId: seleccion.grupo.id } });
+      setSeleccion(null);
+      setModal({
+        open: true,
+        title: "¡Inscripción confirmada!",
+        message: `Has sido inscrito en ${seleccion.programa.nombre} · ${seleccion.grupo.nombre}.`,
+        type: "success",
+      });
+      cargar();
+    } catch (err) {
+      setSeleccion(null);
+      setModal({ open: true, title: "No se pudo inscribir", message: err.message, type: "error" });
+    }
+  };
+
+  return (
+    <div style={{ fontFamily: "Segoe UI, sans-serif", background: C.bgPage, minHeight: "100%", padding: 4 }}>
+      <ConfirmModal
+        open={!!seleccion}
+        title="Confirmar inscripción"
+        message={seleccion
+          ? `¿Deseas inscribirte en "${seleccion.programa.nombre}" en el ${seleccion.grupo.nombre}?\nHorario: ${seleccion.grupo.horario}\nSalón: ${seleccion.grupo.salon}`
+          : ""}
+        type="confirm"
+        confirmText="Sí, inscribirme"
+        cancelText="Cancelar"
+        onConfirm={confirmar}
+        onCancel={() => setSeleccion(null)}
+      />
+      <ConfirmModal
+        {...modal}
+        hideCancel
+        confirmText="Entendido"
+        onConfirm={() => setModal({ ...modal, open: false })}
+        onCancel={() => setModal({ ...modal, open: false })}
+      />
+
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: C.headingText, margin: "0 0 20px" }}>
         Programas disponibles
       </h2>
 
-      {/* Filtros */}
       <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-        <input placeholder="Buscar programa..." readOnly style={{
-          flex: 1, padding: "9px 14px", border: `1px solid ${colors.inputBorder}`,
-          borderRadius: 6, fontSize: 15, color: colors.mutedText,
-          background: colors.bgCard, outline: "none",
-        }} />
-        <select disabled style={{
-          padding: "9px 14px", border: `1px solid ${colors.inputBorder}`, borderRadius: 6,
-          fontSize: 15, color: colors.mutedText, background: colors.bgCard, cursor: "not-allowed",
-        }}>
-          <option>Categoría ▾</option>
-        </select>
-        <select disabled style={{
-          padding: "9px 14px", border: `1px solid ${colors.inputBorder}`, borderRadius: 6,
-          fontSize: 15, color: colors.mutedText, background: colors.bgCard, cursor: "not-allowed",
-        }}>
-          <option>Horario ▾</option>
+        <input
+          placeholder="Buscar programa..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{
+            flex: 1, padding: "9px 14px", border: `1px solid ${C.inputBorder}`,
+            borderRadius: 6, fontSize: 15, color: C.bodyText,
+            background: C.bgCard, outline: "none",
+          }}
+        />
+        <select
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value)}
+          style={{
+            padding: "9px 14px", border: `1px solid ${C.inputBorder}`, borderRadius: 6,
+            fontSize: 15, color: C.bodyText, background: C.bgCard, cursor: "pointer",
+          }}
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
-      {/* Grid de programas */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-        {programs.map((p) => (
-          <div key={p.name} style={{
-            background: p.active ? colors.bgCard : colors.bgCardOff,
-            border: `1.5px solid ${p.active ? colors.border : colors.borderOff}`,
-            borderRadius: 8, padding: "18px 20px",
-            opacity: p.active ? 1 : 0.75,
-          }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.headingText, marginBottom: 5 }}>{p.name}</div>
-            <div style={{ fontSize: 13, color: colors.labelText, marginBottom: 10, fontWeight: 600 }}>{p.cat}</div>
-            <div style={{ fontSize: 14, color: colors.bodyText, marginBottom: 4 }}>
-              <span style={{ color: colors.mutedText }}>Docente: </span>{p.teacher}
-            </div>
-            <div style={{ fontSize: 14, color: colors.bodyText, marginBottom: 4 }}>
-              <span style={{ color: colors.mutedText }}>Horario: </span>{p.schedule}
-            </div>
-            <div style={{ fontSize: 14, color: colors.bodyText, marginBottom: 14 }}>
-              <span style={{ color: colors.mutedText }}>Cupos: </span>
-              {p.spots > 0 ? `${p.spots} disponibles` : "Sin cupos disponibles"}
-            </div>
-            <button disabled style={{
-              padding: "7px 18px",
-              border: "none",
-              borderRadius: 6, fontSize: 14, fontWeight: 600,
-              color: p.active ? colors.btnText : colors.btnOffText,
-              background: p.active ? colors.btnBg : colors.btnOffBg,
-              cursor: p.active ? "pointer" : "not-allowed",
-            }}>
-              {p.spots > 0 ? "Inscribirse" : "Lista espera"}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Paginación */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 28 }}>
-        {["‹", "1", "2", "3", "›"].map(p => (
-          <button key={p} disabled style={{
-            padding: "6px 13px", border: `1px solid ${colors.inputBorder}`,
-            borderRadius: 5, fontSize: 15, color: colors.bodyText,
-            background: colors.bgCard, cursor: "not-allowed",
-          }}>{p}</button>
-        ))}
-      </div>
+      {loading ? (
+        <p style={{ color: C.mutedText }}>Cargando programas...</p>
+      ) : filtrados.length === 0 ? (
+        <p style={{ color: C.mutedText }}>No se encontraron programas con esos filtros.</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+          {filtrados.map(p =>
+            p.grupos.length === 0 ? (
+              <div key={p.id} style={{
+                background: C.bgCardOff,
+                border: `1.5px solid ${C.borderOff}`,
+                borderRadius: 8, padding: "18px 20px", opacity: 0.75,
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.headingText, marginBottom: 5 }}>{p.nombre}</div>
+                <div style={{ fontSize: 13, color: C.labelText, marginBottom: 10, fontWeight: 600 }}>{p.categoria}</div>
+                <div style={{ fontSize: 13, color: C.mutedText }}>Sin grupos disponibles actualmente</div>
+              </div>
+            ) : p.grupos.map(g => {
+              const cupos = g.cupoMaximo - g._count.inscripciones;
+              const ocupado = yaInscritoGrupo(g.id);
+              const sinCupos = cupos <= 0;
+              return (
+                <div key={g.id} style={{
+                  background: !sinCupos ? C.bgCard : C.bgCardOff,
+                  border: `1.5px solid ${!sinCupos ? C.border : C.borderOff}`,
+                  borderRadius: 8, padding: "18px 20px",
+                  opacity: sinCupos ? 0.75 : 1,
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: C.headingText, marginBottom: 5 }}>{p.nombre}</div>
+                  <div style={{ fontSize: 13, color: C.labelText, marginBottom: 10, fontWeight: 600 }}>
+                    {p.categoria} · {g.nombre}
+                  </div>
+                  <div style={{ fontSize: 14, color: C.bodyText, marginBottom: 4 }}>
+                    <span style={{ color: C.mutedText }}>Docente: </span>
+                    {g.profesor ? `${g.profesor.nombre} ${g.profesor.apellido}` : "Por asignar"}
+                  </div>
+                  <div style={{ fontSize: 14, color: C.bodyText, marginBottom: 4 }}>
+                    <span style={{ color: C.mutedText }}>Horario: </span>{g.horario}
+                  </div>
+                  <div style={{ fontSize: 14, color: C.bodyText, marginBottom: 4 }}>
+                    <span style={{ color: C.mutedText }}>Salón: </span>{g.salon}
+                  </div>
+                  <div style={{ fontSize: 14, color: C.bodyText, marginBottom: 14 }}>
+                    <span style={{ color: C.mutedText }}>Cupos: </span>
+                    {cupos > 0 ? `${cupos} disponibles` : "Sin cupos disponibles"}
+                  </div>
+                  <button
+                    disabled={ocupado}
+                    onClick={() => setSeleccion({ programa: p, grupo: g })}
+                    style={{
+                      padding: "7px 18px", border: "none", borderRadius: 6,
+                      fontSize: 14, fontWeight: 600,
+                      color: C.btnText,
+                      background: ocupado ? C.btnOffBg : (sinCupos ? "#8a9e90" : C.btnBg),
+                      cursor: ocupado ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {ocupado ? "Ya inscrito" : (sinCupos ? "Lista de espera" : "Inscribirse")}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }

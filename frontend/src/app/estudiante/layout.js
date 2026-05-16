@@ -1,21 +1,20 @@
-import Navbar from '@/app/components/lt/Navbar';
-import StudentSidebar from '@/app/components/lt/StudentSidebar';
-import { shell } from '@/app/lt-styles';
+import Navbar from "@/app/components/lt/Navbar";
+import StudentSidebar from "@/app/components/lt/StudentSidebar";
+import ProtectedRoute from "@/app/components/lt/ProtectedRoute";
 
 export default function EstudianteLayout({ children }) {
   return (
-    <>
-      <Navbar userName="Andrés" userRole="estudiante" />
+    <ProtectedRoute roles={["estudiante"]}>
+      <Navbar />
       <StudentSidebar />
       <main style={{
-        marginTop: shell.navbarHeight,
-        marginLeft: shell.sidebarWidth,
-        padding: '28px 32px',
-        minHeight: `calc(100vh - ${shell.navbarHeight}px)`,
-        background: '#f5f5f5',
+        marginTop: 46, marginLeft: 180,
+        padding: "28px 32px",
+        minHeight: "calc(100vh - 46px)",
+        background: "#f5f5f5",
       }}>
         {children}
       </main>
-    </>
+    </ProtectedRoute>
   );
 }

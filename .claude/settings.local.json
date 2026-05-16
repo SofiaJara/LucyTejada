@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada *)",
+      "Bash(dir C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada\\\\frontend *)",
+      "Bash(dir \"C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada\\\\frontend\\\\src\" /s /b)",
+      "Bash(findstr /v \"node_modules\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada\\\\frontend\\\\src\" -Recurse -File | Where-Object { $_.FullName -notmatch 'node_modules' } | Select-Object -ExpandProperty FullName)",
+      "Bash(awk 'length\\($0\\) < 2000' \"C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada\\\\project_context\\\\Copia de Entregable 1 Lucy Tejada - completado.docx.md\")",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(rm -rf admin account booking api root)",
+      "Bash(rm -f services/adminService.js services/mercadoPagoService.js services/reservationService.js services/seatService.js services/segmentoService.js)",
+      "Bash(rmdir services *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(curl *)",
+      "Bash(rm -f package-lock.json)",
+      "Bash(rm -f gen_pages.py)",
+      "Bash(python -m json.tool)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} programas'\\)\")",
+      "Bash(git add *)"
+    ]
+  }
+}

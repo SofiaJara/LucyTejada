@@ -1,5 +1,9 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
+import ConfirmModal from "@/app/components/lt/ConfirmModal";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -8,18 +12,42 @@ const C = {
 };
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState({ open: false, title: "", message: "", type: "error" });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!correo || !contrasena) {
+      setModal({ open: true, title: "Datos incompletos", message: "Por favor ingresa correo y contraseña.", type: "warning" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const user = await login(correo, contrasena);
+      router.push(redirectByRol(user.rol));
+    } catch (err) {
+      setModal({ open: true, title: "Error al iniciar sesión", message: err.message || "Credenciales inválidas", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{
       minHeight: "100vh", display: "flex", alignItems: "center",
       justifyContent: "center", background: C.bg,
       fontFamily: "Segoe UI, sans-serif",
     }}>
+      <ConfirmModal {...modal} hideCancel confirmText="Entendido" onCancel={() => setModal({ ...modal, open: false })} onConfirm={() => setModal({ ...modal, open: false })} />
 
-      <div style={{
+      <form onSubmit={handleSubmit} style={{
         width: 620, background: C.card, borderRadius: 18, border: `2px solid ${C.border}`,
         display: "flex", overflow: "hidden", boxShadow: "0 4px 20px rgba(58,96,72,0.12)",
       }}>
-        {/* Panel izquierdo — Marca */}
         <div style={{
           width: 230, minHeight: 360, borderRight: `1.5px solid ${C.border}`,
           display: "flex", flexDirection: "column", alignItems: "center",
@@ -30,42 +58,60 @@ export default function LoginPage() {
           <span style={{ fontSize: 14, color: C.muted }}>Centro Cultural</span>
         </div>
 
-        {/* Panel derecho — Formulario */}
         <div style={{
           flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
           justifyContent: "center", padding: "36px", gap: 16,
         }}>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.head }}>Bienvenido</h2>
-          <input type="text" placeholder="usuario" readOnly style={{
-            width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`,
-            borderRadius: 6, fontSize: 15, color: C.body, background: C.card,
-            boxSizing: "border-box", outline: "none",
-          }} />
-          <input type="password" placeholder="contraseña" readOnly style={{
-            width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`,
-            borderRadius: 6, fontSize: 15, color: C.body, background: C.card,
-            boxSizing: "border-box", outline: "none",
-          }} />
-          <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-            <a href="/estudiante/informacion" style={{
-              padding: "9px 22px", border: "none", borderRadius: 6,
-              fontSize: 15, fontWeight: 600, color: C.btnT, background: C.btn, textDecoration: "none",
-            }}>Estudiante</a>
-            <a href="/profesor/dashboard" style={{
-              padding: "9px 22px", border: "none", borderRadius: 6,
-              fontSize: 15, fontWeight: 600, color: C.btnT, background: C.btn, textDecoration: "none",
-            }}>Profesor</a>
-          </div>
+          <input
+            type="email"
+            placeholder="correo electrónico"
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
+            disabled={loading}
+            style={{
+              width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`,
+              borderRadius: 6, fontSize: 15, color: C.body, background: C.card,
+              boxSizing: "border-box", outline: "none",
+            }}
+          />
+          <input
+            type="password"
+            placeholder="contraseña"
+            value={contrasena}
+            onChange={(e) => setContrasena(e.target.value)}
+            disabled={loading}
+            style={{
+              width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`,
+              borderRadius: 6, fontSize: 15, color: C.body, background: C.card,
+              boxSizing: "border-box", outline: "none",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: "10px 30px", border: "none", borderRadius: 6,
+              fontSize: 15, fontWeight: 600, color: C.btnT, background: C.btn,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1,
+              width: "100%", marginTop: 4,
+            }}
+          >
+            {loading ? "Iniciando..." : "Iniciar sesión"}
+          </button>
           <span style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>
             ¿no tienes cuenta?{" "}
-            <span style={{ color: C.btn, cursor: "pointer", fontWeight: 600 }}>Regístrate</span>
+            <Link href="/register" style={{ color: C.btn, cursor: "pointer", fontWeight: 600, textDecoration: "none" }}>
+              Regístrate
+            </Link>
           </span>
         </div>
-      </div>
+      </form>
 
       <p style={{ position: "absolute", bottom: 16, left: 0, right: 0, textAlign: "center",
-        fontSize: 13, color: C.muted, margin: 0 }}>
-        Fuente: Elaboración propia.
+        fontSize: 12, color: C.muted, margin: 0 }}>
+        Centro Cultural Lucy Tejada · Pereira
       </p>
     </div>
   );

@@ -1,4 +1,7 @@
 "use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { api } from "@/app/lib/api";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -7,98 +10,114 @@ const C = {
 };
 
 export default function GruposPage() {
+  const [grupos, setGrupos] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api("/api/grupos").then(gs => {
+      setGrupos(gs);
+      if (gs.length > 0) setSelected(gs[0].id);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const grupo = grupos.find(g => g.id === selected);
+
+  if (loading) return <p style={{ color: C.muted }}>Cargando...</p>;
+
+  if (grupos.length === 0) {
+    return (
+      <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.head, margin: "0 0 16px" }}>Mis grupos</h2>
+        <div style={{ padding: 30, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, textAlign: "center" }}>
+          Aún no tienes grupos asignados. Contacta al administrador.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: C.head, margin: "0 0 18px" }}>Mis grupos</h2>
 
-      {/* Breadcrumb */}
-      <div style={{ fontSize: 13, color: C.muted, marginBottom: 18 }}>
-        Mis grupos › Piano básico · Grupo A ›{" "}
-        <span style={{ color: C.body, fontWeight: 500 }}>Andrés López</span>
+      <div style={{ display: "flex", gap: 10, marginBottom: 22, flexWrap: "wrap" }}>
+        {grupos.map(g => (
+          <button key={g.id} onClick={() => setSelected(g.id)} style={{
+            padding: "8px 16px", borderRadius: 6,
+            border: `1.5px solid ${selected === g.id ? C.btn : C.border}`,
+            background: selected === g.id ? C.btn : C.card,
+            color: selected === g.id ? "#fff" : C.body,
+            fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}>
+            {g.programa.nombre} · {g.nombre}
+          </button>
+        ))}
       </div>
 
-      {/* Cabecera */}
-      <div style={{
-        background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
-        padding: "18px 22px", marginBottom: 22,
-        display: "flex", alignItems: "center", gap: 18,
-      }}>
-        <div style={{
-          width: 60, height: 60, borderRadius: "50%",
-          border: `2px solid ${C.btn}`, display: "flex",
-          alignItems: "center", justifyContent: "center",
-          fontSize: 18, fontWeight: 700, color: C.btn, background: "#eef5f0",
-        }}>AL</div>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: C.head }}>Andrés López</div>
-          <div style={{ fontSize: 14, color: C.muted }}>Piano básico · Grupo A</div>
-          <div style={{ fontSize: 13, color: C.muted }}>Matrícula: 2026-0041 · Pereira</div>
-        </div>
-      </div>
+      {grupo && (
+        <>
+          <div style={{
+            background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+            padding: "18px 22px", marginBottom: 22,
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.head, marginBottom: 6 }}>
+              {grupo.programa.nombre} · {grupo.nombre}
+            </div>
+            <div style={{ fontSize: 14, color: C.muted, marginBottom: 4 }}>
+              <strong>Horario:</strong> {grupo.horario} &nbsp;·&nbsp; <strong>Salón:</strong> {grupo.salon}
+            </div>
+            <div style={{ fontSize: 14, color: C.muted }}>
+              <strong>Estudiantes:</strong> {grupo.inscripciones?.length || 0} / {grupo.cupoMaximo}
+            </div>
+          </div>
 
-      {/* Dos columnas */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
-        {/* Datos personales */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "20px 22px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head,
-            borderBottom: `1px solid ${C.divider}`, paddingBottom: 8 }}>Datos personales</h3>
-          {[
-            ["Documento",            "CC 1.234.567.890"],
-            ["Género",               "Masculino"],
-            ["Correo electrónico",   "andres.lopez@correo.com"],
-            ["Barrio / Ciudad",      "El Jardín · Pereira"],
-            ["Horario",              "Lun y mié · 8:00 am · Salón 3"],
-          ].map(([l, v]) => (
-            <div key={l} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: C.muted, width: 160, flexShrink: 0 }}>{l}</span>
-              <span style={{ fontSize: 14, color: C.body, fontWeight: 500 }}>{v}</span>
-            </div>
-          ))}
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-            <button disabled style={{
-              padding: "8px 16px", border: `1px solid ${C.border}`, borderRadius: 6,
-              fontSize: 13, color: C.muted, background: C.card, cursor: "not-allowed",
-            }}>Ver asistencia completa</button>
-            <a href="/profesor/evaluaciones" style={{
-              padding: "8px 18px", border: "none", borderRadius: 6,
-              fontSize: 13, fontWeight: 600, color: C.btnT, background: C.btn, textDecoration: "none",
-            }}>Evaluar</a>
-          </div>
-        </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: C.head, margin: "0 0 12px" }}>
+            Estudiantes inscritos
+          </h3>
 
-        {/* Resumen académico */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "20px 22px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head,
-            borderBottom: `1px solid ${C.divider}`, paddingBottom: 8 }}>Resumen académico</h3>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ height: 12, borderRadius: 6, background: "#e0ece6", overflow: "hidden", marginBottom: 6 }}>
-              <div style={{ width: "74%", height: "100%", background: C.progress, borderRadius: 6 }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 14, color: C.body }}>14 / 19 clases</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: C.head }}>74%</span>
-            </div>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {grupo.inscripciones?.length === 0 ? (
+              <p style={{ padding: 18, margin: 0, color: C.muted, fontSize: 14 }}>
+                Aún no hay estudiantes inscritos.
+              </p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
+                    {["Documento", "Nombre", "Ciudad", "Barrio", "Género", "Acciones"].map(h => (
+                      <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 13, fontWeight: 700, color: C.head }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {grupo.inscripciones.map(ins => {
+                    const e = ins.estudiante;
+                    return (
+                      <tr key={ins.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.muted }}>{e.documento}</td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body, fontWeight: 500 }}>
+                          {e.nombre} {e.apellido}
+                        </td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>{e.ciudad || "—"}</td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>{e.barrio || "—"}</td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>{e.genero || "—"}</td>
+                        <td style={{ padding: "9px 14px" }}>
+                          <Link href={`/profesor/evaluaciones?grupoId=${grupo.id}&estudianteId=${e.id}`} style={{
+                            padding: "5px 12px", border: "none", borderRadius: 5,
+                            fontSize: 12, fontWeight: 600, color: "#fff", background: C.btn, textDecoration: "none",
+                          }}>Evaluar</Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
-          <div style={{ fontSize: 14, color: C.body, marginBottom: 6 }}>
-            <strong style={{ color: C.head }}>Última evaluación:</strong> Período 2026-1 · Bueno
-          </div>
-          <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>
-            Muestra avance en técnica, mejorar expresión creativa.
-          </div>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 700, color: C.head }}>
-            Historial de evaluaciones
-          </h4>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <tbody>
-              {[["2025-2", "Regular"], ["2025-1", "Bueno"], ["2024-2", "Excelente"]].map(([p, v]) => (
-                <tr key={p} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                  <td style={{ padding: "7px 10px", color: C.muted }}>{p}</td>
-                  <td style={{ padding: "7px 10px", color: C.body, fontWeight: 500 }}>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

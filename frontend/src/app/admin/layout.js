@@ -1,0 +1,20 @@
+import Navbar from "@/app/components/lt/Navbar";
+import AdminSidebar from "@/app/components/lt/AdminSidebar";
+import ProtectedRoute from "@/app/components/lt/ProtectedRoute";
+
+export default function AdminLayout({ children }) {
+  return (
+    <ProtectedRoute roles={["admin"]}>
+      <Navbar />
+      <AdminSidebar />
+      <main style={{
+        marginTop: 46, marginLeft: 180,
+        padding: "28px 32px",
+        minHeight: "calc(100vh - 46px)",
+        background: "#f5f5f5",
+      }}>
+        {children}
+      </main>
+    </ProtectedRoute>
+  );
+}

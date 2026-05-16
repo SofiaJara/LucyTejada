@@ -1,21 +1,20 @@
-import Navbar from '@/app/components/lt/Navbar';
-import TeacherSidebar from '@/app/components/lt/TeacherSidebar';
-import { shell } from '@/app/lt-styles';
+import Navbar from "@/app/components/lt/Navbar";
+import TeacherSidebar from "@/app/components/lt/TeacherSidebar";
+import ProtectedRoute from "@/app/components/lt/ProtectedRoute";
 
 export default function ProfesorLayout({ children }) {
   return (
-    <>
-      <Navbar userName="Hernán" userRole="profesor" />
+    <ProtectedRoute roles={["profesor"]}>
+      <Navbar />
       <TeacherSidebar />
       <main style={{
-        marginTop: shell.navbarHeight,
-        marginLeft: shell.sidebarWidth,
-        padding: '28px 32px',
-        minHeight: `calc(100vh - ${shell.navbarHeight}px)`,
-        background: '#f5f5f5',
+        marginTop: 46, marginLeft: 180,
+        padding: "28px 32px",
+        minHeight: "calc(100vh - 46px)",
+        background: "#f5f5f5",
       }}>
         {children}
       </main>
-    </>
+    </ProtectedRoute>
   );
 }
