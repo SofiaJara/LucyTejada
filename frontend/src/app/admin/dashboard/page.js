@@ -25,12 +25,14 @@ export default function AdminDashboard() {
   if (!stats) return <p style={{ color: C.muted }}>Cargando...</p>;
 
   const metrics = [
-    { label: "Estudiantes", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante" },
+    { label: "Estudiantes activos", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante" },
     { label: "Profesores", value: stats.totalProfesores, href: "/admin/usuarios?rol=profesor" },
     { label: "Programas activos", value: stats.totalProgramas, href: "/admin/programas" },
     { label: "Grupos activos", value: stats.totalGrupos, href: "/admin/grupos" },
-    { label: "Inscripciones", value: stats.inscripcionesActivas, href: "/admin/grupos" },
+    { label: "Inscripciones activas", value: stats.inscripcionesActivas, href: "/admin/grupos" },
     { label: "Evaluaciones", value: stats.evaluacionesRecientes, href: "/admin/reportes" },
+    { label: "Lista de espera", value: stats.listaEspera ?? 0, href: "/admin/grupos" },
+    { label: "Estudiantes inactivos", value: stats.estudiantesInactivos ?? 0, href: "/admin/usuarios?rol=estudiante" },
   ];
 
   // Top 5 asistencia y top 5 inscripciones
@@ -42,7 +44,7 @@ export default function AdminDashboard() {
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.head, margin: "0 0 6px" }}>Panel de administración</h2>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 22px" }}>Resumen general del Centro Cultural Lucy Tejada</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 14, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
         {metrics.map(m => (
           <Link key={m.label} href={m.href} style={{ textDecoration: "none" }}>
             <div style={{

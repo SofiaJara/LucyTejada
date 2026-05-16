@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -49,6 +50,11 @@ router.post('/', authenticate, requireRole('admin', 'profesor'), async (req, res
     })
   );
   await prisma.$transaction(ops);
+  await registrar({
+    accion: 'create', entidad: 'notificacion',
+    descripcion: `Envió notificación masiva "${titulo}" a ${usuarioIds.length} usuario(s) (${categoria || 'sistema'})`,
+    req,
+  });
   res.status(201).json({ ok: true, count: usuarioIds.length });
 });
 

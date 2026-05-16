@@ -92,6 +92,21 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/logout', async (req, res) => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(header.split(' ')[1], process.env.JWT_SECRET);
+      await registrar({
+        accion: 'logout', entidad: 'usuario', entidadId: decoded.id,
+        descripcion: `Cierre de sesión (${decoded.rol})`,
+        req: { user: decoded, headers: req.headers, ip: req.ip, socket: req.socket },
+      });
+    } catch {}
+  }
+  res.json({ ok: true });
+});
+
 router.get('/me', async (req, res) => {
   try {
     const header = req.headers.authorization;

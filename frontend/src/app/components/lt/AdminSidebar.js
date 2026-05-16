@@ -1,6 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import SidebarItem from "./SidebarItem";
+import useUnreadCount from "./useUnreadCount";
 
 const C = { btn: "#3A6048", border: "#b8cdc0", muted: "#4a5a52" };
 
@@ -10,13 +11,14 @@ const navItems = [
   { label: "Programas",      href: "/admin/programas" },
   { label: "Grupos",         href: "/admin/grupos" },
   { label: "Reportes",       href: "/admin/reportes" },
-  { label: "Notificaciones", href: "/admin/notificaciones" },
+  { label: "Notificaciones", href: "/admin/notificaciones", showBadge: true },
   { label: "Bitácora",       href: "/admin/bitacora" },
   { label: "Mi perfil",      href: "/admin/perfil" },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const unread = useUnreadCount();
 
   return (
     <aside style={{
@@ -34,7 +36,7 @@ export default function AdminSidebar() {
               href={item.href}
               label={item.label}
               active={active}
-              badge={0}
+              badge={item.showBadge ? unread : 0}
             />
           );
         })}

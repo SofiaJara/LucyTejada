@@ -47,6 +47,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    api("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("lt_token");
     localStorage.removeItem("lt_user");
     setUser(null);

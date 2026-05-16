@@ -9,12 +9,14 @@ const router = express.Router();
 router.use(authenticate, requireRole('admin'));
 
 router.get('/dashboard', async (req, res) => {
-  const [totalEstudiantes, totalProfesores, totalProgramas, totalGrupos, evaluacionesRecientes] = await Promise.all([
-    prisma.usuario.count({ where: { rol: 'estudiante' } }),
-    prisma.usuario.count({ where: { rol: 'profesor' } }),
+  const [totalEstudiantes, totalProfesores, totalProgramas, totalGrupos, evaluacionesRecientes, estudiantesInactivos, listaEspera] = await Promise.all([
+    prisma.usuario.count({ where: { rol: 'estudiante', activo: true } }),
+    prisma.usuario.count({ where: { rol: 'profesor', activo: true } }),
     prisma.programa.count({ where: { activo: true } }),
     prisma.grupo.count({ where: { activo: true } }),
     prisma.evaluacion.count(),
+    prisma.usuario.count({ where: { rol: 'estudiante', activo: false } }),
+    prisma.inscripcion.count({ where: { estado: 'lista_espera' } }),
   ]);
   const inscripciones = await prisma.inscripcion.count({ where: { estado: 'activo' } });
 
@@ -38,6 +40,8 @@ router.get('/dashboard', async (req, res) => {
     totalGrupos,
     inscripcionesActivas: inscripciones,
     evaluacionesRecientes,
+    estudiantesInactivos,
+    listaEspera,
     generos,
     ciudades,
   });

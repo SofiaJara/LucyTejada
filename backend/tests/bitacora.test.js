@@ -37,4 +37,57 @@ describe('bitácora (CAR-11)', () => {
     const tipos = acciones.map(a => a.accion).sort();
     assert.deepEqual(tipos, ['create', 'delete', 'update']);
   });
+
+  test('POST /api/auth/logout registra bitácora de logout', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).post('/api/auth/logout').set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 200);
+    const logs = await prisma.bitacora.findMany({ where: { accion: 'logout' } });
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].usuarioCorreo, admin.correo);
+  });
+
+  test('asistencia genera bitácora al crear clase y registrar', async () => {
+    const { profesor, grupo, estudiante } = await seedBasic();
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    const t = await login(profesor.correo, 'password123');
+    const clase = await request(app).post('/api/asistencia/clases')
+      .set('Authorization', `Bearer ${t}`).send({ grupoId: grupo.id, tema: 'X' });
+    await request(app).post(`/api/asistencia/clases/${clase.body.id}/registrar`)
+      .set('Authorization', `Bearer ${t}`)
+      .send({ asistencias: [{ estudianteId: estudiante.id, asistio: true }] });
+    const claseLogs = await prisma.bitacora.findMany({ where: { entidad: 'clase' } });
+    const asLogs = await prisma.bitacora.findMany({ where: { entidad: 'asistencia' } });
+    assert.equal(claseLogs.length, 1);
+    assert.equal(asLogs.length, 1);
+  });
+
+  test('evaluaciones genera bitácora con accion create y update', async () => {
+    const { profesor, grupo, estudiante } = await seedBasic();
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    const t = await login(profesor.correo, 'password123');
+    const body = {
+      estudianteId: estudiante.id, grupoId: grupo.id, periodo: '2026-1',
+      participacion: 'Bueno', practica: 'Bueno', actitud: 'Bueno', progreso: 'Bueno',
+      valoracionGeneral: 'Bueno', comentario: '',
+    };
+    await request(app).post('/api/evaluaciones').set('Authorization', `Bearer ${t}`).send(body);
+    await request(app).post('/api/evaluaciones').set('Authorization', `Bearer ${t}`)
+      .send({ ...body, valoracionGeneral: 'Excelente' });
+    const logs = await prisma.bitacora.findMany({ where: { entidad: 'evaluacion' }, orderBy: { id: 'asc' } });
+    assert.equal(logs.length, 2);
+    assert.equal(logs[0].accion, 'create');
+    assert.equal(logs[1].accion, 'update');
+  });
+
+  test('notificación masiva queda registrada en bitácora', async () => {
+    const { admin, estudiante } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    await request(app).post('/api/notificaciones').set('Authorization', `Bearer ${t}`)
+      .send({ usuarioIds: [estudiante.id], titulo: 'Aviso', mensaje: 'Hola', categoria: 'eventos' });
+    const logs = await prisma.bitacora.findMany({ where: { entidad: 'notificacion' } });
+    assert.equal(logs.length, 1);
+    assert.match(logs[0].descripcion, /Aviso/);
+  });
 });

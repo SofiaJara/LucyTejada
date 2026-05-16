@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -22,6 +23,12 @@ router.post('/clases', authenticate, requireRole('profesor', 'admin'), async (re
 
   const clase = await prisma.clase.create({
     data: { grupoId: Number(grupoId), fecha: fechaDate, tema },
+    include: { grupo: { include: { programa: true } } },
+  });
+  await registrar({
+    accion: 'create', entidad: 'clase', entidadId: clase.id,
+    descripcion: `Creó clase ${clase.grupo.programa.nombre} · ${clase.grupo.nombre} (${fechaDate.toISOString().split('T')[0]})${tema ? ` · ${tema}` : ''}`,
+    req,
   });
   res.status(201).json(clase);
 });
@@ -47,6 +54,12 @@ router.post('/clases/:claseId/registrar', authenticate, requireRole('profesor', 
     })
   );
   await prisma.$transaction(ops);
+  const presentes = asistencias.filter(a => a.asistio).length;
+  await registrar({
+    accion: 'update', entidad: 'asistencia', entidadId: claseId,
+    descripcion: `Registró asistencia de clase #${claseId}: ${presentes}/${asistencias.length} presentes`,
+    req,
+  });
   res.json({ ok: true, registradas: asistencias.length });
 });
 

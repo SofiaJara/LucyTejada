@@ -60,6 +60,7 @@ export default function BitacoraPage() {
         <select value={accion} onChange={(e) => setAccion(e.target.value)} style={input}>
           <option value="">Todas las acciones</option>
           <option value="login">Login</option>
+          <option value="logout">Logout</option>
           <option value="create">Crear</option>
           <option value="update">Actualizar</option>
           <option value="delete">Eliminar</option>
@@ -70,6 +71,10 @@ export default function BitacoraPage() {
           <option value="programa">Programa</option>
           <option value="grupo">Grupo</option>
           <option value="inscripcion">Inscripción</option>
+          <option value="clase">Clase</option>
+          <option value="asistencia">Asistencia</option>
+          <option value="evaluacion">Evaluación</option>
+          <option value="notificacion">Notificación</option>
         </select>
         <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={input} title="Desde" />
         <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={input} title="Hasta" />

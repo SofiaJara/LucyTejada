@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -39,6 +40,16 @@ router.post('/', authenticate, requireRole('profesor', 'admin'), async (req, res
     return res.status(400).json({ error: 'Faltan datos' });
   }
 
+  const previa = await prisma.evaluacion.findUnique({
+    where: {
+      estudianteId_grupoId_periodo: {
+        estudianteId: Number(estudianteId),
+        grupoId: Number(grupoId),
+        periodo,
+      },
+    },
+  });
+
   const evalu = await prisma.evaluacion.upsert({
     where: {
       estudianteId_grupoId_periodo: {
@@ -60,6 +71,18 @@ router.post('/', authenticate, requireRole('profesor', 'admin'), async (req, res
       valoracionGeneral, comentario,
       profesorId: req.user.id,
     },
+    include: {
+      estudiante: { select: { nombre: true, apellido: true } },
+      grupo: { include: { programa: true } },
+    },
+  });
+
+  await registrar({
+    accion: previa ? 'update' : 'create',
+    entidad: 'evaluacion',
+    entidadId: evalu.id,
+    descripcion: `${previa ? 'Actualizó' : 'Creó'} evaluación de ${evalu.estudiante.nombre} ${evalu.estudiante.apellido} · ${evalu.grupo.programa.nombre} · ${periodo} (${valoracionGeneral})`,
+    req,
   });
 
   // notificar al estudiante
