@@ -122,6 +122,19 @@ export default function AsistenciaPage() {
   const hoy = new Date().toDateString();
   const claseHoy = !claseId && clases.find(c => new Date(c.fecha).toDateString() === hoy);
 
+  if (grupos.length === 0) {
+    return (
+      <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.head, margin: "0 0 18px" }}>
+          Registro de asistencia
+        </h2>
+        <div style={{ padding: 30, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, textAlign: "center" }}>
+          Aún no tienes grupos asignados. Contacta al administrador para que te asigne uno antes de registrar asistencia.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <ConfirmModal

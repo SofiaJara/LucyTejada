@@ -120,6 +120,19 @@ function EvaluacionesPage() {
 
   const estudiante = grupo?.inscripciones.find(ins => ins.estudiante.id === Number(estudianteId))?.estudiante;
 
+  if (grupos.length === 0) {
+    return (
+      <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.head, margin: "0 0 18px" }}>
+          Evaluación cualitativa
+        </h2>
+        <div style={{ padding: 30, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, textAlign: "center" }}>
+          Aún no tienes grupos asignados. Contacta al administrador para que te asigne uno antes de registrar evaluaciones.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <ConfirmModal
