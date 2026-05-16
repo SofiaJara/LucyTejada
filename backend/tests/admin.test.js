@@ -166,6 +166,53 @@ describe('admin', () => {
     assert.equal(rInactivos.body[0].correo, 'inactivo@x.com');
   });
 
+  test('GET /api/admin/usuarios filtra por rango de edad (CAR-10)', async () => {
+    const { admin } = await seedBasic();
+    const ahora = new Date();
+    const nacimientoEdad = (edad) => {
+      const d = new Date(ahora);
+      d.setFullYear(d.getFullYear() - edad);
+      // restar un día para no caer en el límite exacto
+      d.setDate(d.getDate() - 1);
+      return d;
+    };
+    // crear estudiantes con edades 10, 16, 30, 50
+    for (const [doc, correo, edad] of [
+      ['EDA-10', 'e10@x.com', 10],
+      ['EDA-16', 'e16@x.com', 16],
+      ['EDA-30', 'e30@x.com', 30],
+      ['EDA-50', 'e50@x.com', 50],
+    ]) {
+      await prisma.usuario.create({
+        data: {
+          documento: doc, correo, contrasena: 'hashed', rol: 'estudiante',
+          nombre: 'E', apellido: doc,
+          fechaNacimiento: nacimientoEdad(edad),
+        },
+      });
+    }
+    const t = await login(admin.correo, 'password123');
+
+    const r1 = await request(app).get('/api/admin/usuarios?minEdad=18').set('Authorization', `Bearer ${t}`);
+    const correos1 = r1.body.map(u => u.correo);
+    assert.ok(correos1.includes('e30@x.com'));
+    assert.ok(correos1.includes('e50@x.com'));
+    assert.ok(!correos1.includes('e10@x.com'));
+    assert.ok(!correos1.includes('e16@x.com'));
+
+    const r2 = await request(app).get('/api/admin/usuarios?maxEdad=17').set('Authorization', `Bearer ${t}`);
+    const correos2 = r2.body.map(u => u.correo);
+    assert.ok(correos2.includes('e10@x.com'));
+    assert.ok(correos2.includes('e16@x.com'));
+    assert.ok(!correos2.includes('e30@x.com'));
+
+    const r3 = await request(app).get('/api/admin/usuarios?minEdad=18&maxEdad=40').set('Authorization', `Bearer ${t}`);
+    const correos3 = r3.body.map(u => u.correo);
+    assert.ok(correos3.includes('e30@x.com'));
+    assert.ok(!correos3.includes('e50@x.com'));
+    assert.ok(!correos3.includes('e16@x.com'));
+  });
+
   test('GET /api/admin/bitacora filtra por acción/entidad/fecha', async () => {
     const { admin } = await seedBasic();
     const t = await login(admin.correo, 'password123');

@@ -4,7 +4,7 @@ import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
 import { calcularDesercion } from '../services/desercion.js';
-import { crearBackup, listarBackups, rutaBackup, restaurarBackup } from '../services/backup.js';
+import { crearBackup, listarBackups, rutaBackup, restaurarBackup, eliminarBackup } from '../services/backup.js';
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ router.get('/dashboard', async (req, res) => {
 });
 
 router.get('/usuarios', async (req, res) => {
-  const { rol, genero, ciudad, barrio, busqueda, grupoId, programaId, activo } = req.query;
+  const { rol, genero, ciudad, barrio, busqueda, grupoId, programaId, activo, minEdad, maxEdad } = req.query;
   const where = {};
   if (rol) where.rol = rol;
   if (genero) where.genero = genero;
@@ -62,6 +62,23 @@ router.get('/usuarios', async (req, res) => {
   else if (activo === 'false') where.activo = false;
   if (grupoId) where.inscripciones = { some: { grupoId: Number(grupoId) } };
   else if (programaId) where.inscripciones = { some: { grupo: { programaId: Number(programaId) } } };
+  if (minEdad || maxEdad) {
+    const ahora = new Date();
+    const fechaNacimientoRange = {};
+    // Para minEdad N: fechaNacimiento <= hoy - N años
+    if (minEdad) {
+      const tope = new Date(ahora);
+      tope.setFullYear(tope.getFullYear() - Number(minEdad));
+      fechaNacimientoRange.lte = tope;
+    }
+    // Para maxEdad N: fechaNacimiento > hoy - (N+1) años
+    if (maxEdad) {
+      const piso = new Date(ahora);
+      piso.setFullYear(piso.getFullYear() - Number(maxEdad) - 1);
+      fechaNacimientoRange.gt = piso;
+    }
+    where.fechaNacimiento = fechaNacimientoRange;
+  }
   if (busqueda) {
     where.OR = [
       { nombre: { contains: busqueda } },
@@ -358,6 +375,21 @@ router.get('/backups/:archivo/descargar', (req, res) => {
   const ruta = rutaBackup(req.params.archivo);
   if (!ruta) return res.status(404).json({ error: 'Backup no encontrado' });
   res.download(ruta);
+});
+
+router.delete('/backups/:archivo', async (req, res) => {
+  try {
+    const info = eliminarBackup(req.params.archivo);
+    await registrar({
+      accion: 'delete', entidad: 'backup', entidadId: null,
+      descripcion: `Admin eliminó backup ${info.eliminado}`,
+      req,
+    });
+    res.json(info);
+  } catch (e) {
+    if (e.message.includes('no encontrado')) return res.status(404).json({ error: e.message });
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.post('/backups/:archivo/restaurar', async (req, res) => {

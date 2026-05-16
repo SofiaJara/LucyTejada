@@ -114,6 +114,42 @@ describe('backups (CAR-12)', () => {
     assert.match(ok.body.backupPrevio, /pre-restore-/);
   });
 
+  test('DELETE /api/admin/backups/:archivo elimina backup y sidecar', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    const archivo = c.body.archivo;
+    const ruta = path.join(BACKUP_DIR, archivo);
+    const sidecar = `${ruta}.sha256`;
+    assert.ok(fs.existsSync(ruta));
+    assert.ok(fs.existsSync(sidecar));
+
+    const del = await request(app).delete(`/api/admin/backups/${archivo}`).set('Authorization', `Bearer ${t}`);
+    assert.equal(del.status, 200);
+    assert.equal(del.body.eliminado, archivo);
+    assert.ok(!fs.existsSync(ruta), 'el .db debe haberse eliminado');
+    assert.ok(!fs.existsSync(sidecar), 'el sidecar .sha256 debe haberse eliminado');
+
+    const list = await request(app).get('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    assert.ok(!list.body.some(b => b.archivo === archivo));
+  });
+
+  test('DELETE /api/admin/backups/<inexistente> responde 404', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const del = await request(app).delete('/api/admin/backups/no-existe.db').set('Authorization', `Bearer ${t}`);
+    assert.equal(del.status, 404);
+  });
+
+  test('DELETE /api/admin/backups requiere admin', async () => {
+    const { admin, profesor } = await seedBasic();
+    const tAdmin = await login(admin.correo, 'password123');
+    const tProf = await login(profesor.correo, 'password123');
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${tAdmin}`);
+    const denied = await request(app).delete(`/api/admin/backups/${c.body.archivo}`).set('Authorization', `Bearer ${tProf}`);
+    assert.equal(denied.status, 403);
+  });
+
   test('restaurar rechaza backup con integridad alterada', async () => {
     const { admin } = await seedBasic();
     const t = await login(admin.correo, 'password123');

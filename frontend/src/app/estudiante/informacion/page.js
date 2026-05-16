@@ -2,6 +2,15 @@
 import { useEffect, useState } from "react";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/AuthContext";
+import BarChart from "@/app/components/lt/BarChart";
+
+const VALORACION_SCORE = { Excelente: 4, Bueno: 3, Regular: 2, Deficiente: 1 };
+const VALORACION_COLOR = {
+  Excelente: "#3A6048",
+  Bueno: "#5a8a6e",
+  Regular: "#a06b1f",
+  Deficiente: "#a8442e",
+};
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -143,27 +152,57 @@ export default function InformacionEstudiantePage() {
             {evals.length === 0 ? (
               <p style={{ fontSize: 13, color: C.muted }}>Aún no tienes evaluaciones registradas.</p>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <thead>
-                  <tr>
-                    {["Período", "Valoración", "Programa"].map(h => (
-                      <th key={h} style={{
-                        padding: "8px 10px", textAlign: "left", fontWeight: 700,
-                        color: C.head, borderBottom: `1.5px solid ${C.divider}`, fontSize: 13,
-                      }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {evals.map(e => (
-                    <tr key={e.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                      <td style={{ padding: "8px 10px", color: C.body }}>{e.periodo}</td>
-                      <td style={{ padding: "8px 10px", color: C.body, fontWeight: 600 }}>{e.valoracionGeneral}</td>
-                      <td style={{ padding: "8px 10px", color: C.muted }}>{e.grupo?.programa?.nombre}</td>
+              <>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, marginBottom: 14 }}>
+                  <thead>
+                    <tr>
+                      {["Período", "Valoración", "Programa"].map(h => (
+                        <th key={h} style={{
+                          padding: "8px 10px", textAlign: "left", fontWeight: 700,
+                          color: C.head, borderBottom: `1.5px solid ${C.divider}`, fontSize: 13,
+                        }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {evals.map(e => (
+                      <tr key={e.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                        <td style={{ padding: "8px 10px", color: C.body }}>{e.periodo}</td>
+                        <td style={{ padding: "8px 10px", fontWeight: 600 }}>
+                          <span style={{
+                            display: "inline-block", padding: "2px 10px", borderRadius: 4,
+                            fontSize: 12, fontWeight: 700, color: "#fff",
+                            background: VALORACION_COLOR[e.valoracionGeneral] || C.muted,
+                          }}>{e.valoracionGeneral}</span>
+                        </td>
+                        <td style={{ padding: "8px 10px", color: C.muted }}>{e.grupo?.programa?.nombre}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {evals.length >= 2 && (
+                  <div style={{ marginTop: 14, padding: "12px 14px", border: `1px dashed ${C.divider}`, borderRadius: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.head, marginBottom: 8 }}>
+                      Tendencia por período
+                    </div>
+                    <BarChart
+                      data={[...evals].reverse().map(e => ({
+                        label: `${e.periodo} · ${e.grupo?.programa?.nombre || ""}`.trim(),
+                        valor: VALORACION_SCORE[e.valoracionGeneral] || 0,
+                      }))}
+                      labelKey="label"
+                      valueKey="valor"
+                      max={4}
+                      color={C.progress}
+                      height={20}
+                    />
+                    <p style={{ margin: "8px 0 0", fontSize: 11, color: C.muted }}>
+                      Escala: 1 = Deficiente · 2 = Regular · 3 = Bueno · 4 = Excelente
+                    </p>
+                  </div>
+                )}
+              </>
             )}
             {evals[0]?.comentario && (
               <p style={{ fontSize: 13, color: C.muted, marginTop: 12, lineHeight: 1.5 }}>

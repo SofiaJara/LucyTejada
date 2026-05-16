@@ -35,6 +35,8 @@ function AdminUsuariosPage() {
   const [barrioFiltro, setBarrioFiltro] = useState("");
   const [grupoFiltro, setGrupoFiltro] = useState("");
   const [activoFiltro, setActivoFiltro] = useState("");
+  const [minEdad, setMinEdad] = useState("");
+  const [maxEdad, setMaxEdad] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
@@ -54,11 +56,13 @@ function AdminUsuariosPage() {
     if (barrioFiltro) params.set("barrio", barrioFiltro);
     if (grupoFiltro) params.set("grupoId", grupoFiltro);
     if (activoFiltro) params.set("activo", activoFiltro);
+    if (minEdad) params.set("minEdad", minEdad);
+    if (maxEdad) params.set("maxEdad", maxEdad);
     if (busqueda) params.set("busqueda", busqueda);
     const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/usuarios${q}`).then(setUsuarios);
   };
-  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, busqueda]);
+  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, minEdad, maxEdad, busqueda]);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (u) => {
@@ -119,7 +123,7 @@ function AdminUsuariosPage() {
   };
 
   const limpiarFiltros = () => {
-    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setGrupoFiltro(""); setActivoFiltro(""); setBusqueda("");
+    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setGrupoFiltro(""); setActivoFiltro(""); setMinEdad(""); setMaxEdad(""); setBusqueda("");
   };
 
   return (
@@ -151,34 +155,40 @@ function AdminUsuariosPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo usuario</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
-        <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={input} />
-        <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={input}>
-          <option value="">Todos los roles</option>
-          <option value="estudiante">Estudiantes</option>
-          <option value="profesor">Profesores</option>
-          <option value="admin">Administradores</option>
-        </select>
-        <select value={generoFiltro} onChange={(e) => setGeneroFiltro(e.target.value)} style={input}>
-          <option value="">Todos los géneros</option>
-          <option>Masculino</option>
-          <option>Femenino</option>
-          <option>Otro</option>
-        </select>
-        <select value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)} style={input} title="Filtrar por grupo">
-          <option value="">Todos los grupos</option>
-          {grupos.map(g => (
-            <option key={g.id} value={g.id}>{g.programa.nombre} · {g.nombre}</option>
-          ))}
-        </select>
-        <select value={activoFiltro} onChange={(e) => setActivoFiltro(e.target.value)} style={input} title="Estado">
-          <option value="">Activos e inactivos</option>
-          <option value="true">Sólo activos</option>
-          <option value="false">Sólo inactivos</option>
-        </select>
-        <input placeholder="Ciudad" value={ciudadFiltro} onChange={(e) => setCiudadFiltro(e.target.value)} style={input} />
-        <input placeholder="Barrio" value={barrioFiltro} onChange={(e) => setBarrioFiltro(e.target.value)} style={input} />
-        <button onClick={limpiarFiltros} style={{ ...btnGhost, padding: "9px 14px" }}>Limpiar</button>
+      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 10 }}>
+          <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={input} />
+          <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={input}>
+            <option value="">Todos los roles</option>
+            <option value="estudiante">Estudiantes</option>
+            <option value="profesor">Profesores</option>
+            <option value="admin">Administradores</option>
+          </select>
+          <select value={generoFiltro} onChange={(e) => setGeneroFiltro(e.target.value)} style={input}>
+            <option value="">Todos los géneros</option>
+            <option>Masculino</option>
+            <option>Femenino</option>
+            <option>Otro</option>
+          </select>
+          <select value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)} style={input} title="Filtrar por grupo">
+            <option value="">Todos los grupos</option>
+            {grupos.map(g => (
+              <option key={g.id} value={g.id}>{g.programa.nombre} · {g.nombre}</option>
+            ))}
+          </select>
+          <select value={activoFiltro} onChange={(e) => setActivoFiltro(e.target.value)} style={input} title="Estado">
+            <option value="">Activos e inactivos</option>
+            <option value="true">Sólo activos</option>
+            <option value="false">Sólo inactivos</option>
+          </select>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10 }}>
+          <input placeholder="Ciudad" value={ciudadFiltro} onChange={(e) => setCiudadFiltro(e.target.value)} style={input} />
+          <input placeholder="Barrio" value={barrioFiltro} onChange={(e) => setBarrioFiltro(e.target.value)} style={input} />
+          <input type="number" min="0" placeholder="Edad mínima" value={minEdad} onChange={(e) => setMinEdad(e.target.value)} style={input} title="Edad mínima (años)" />
+          <input type="number" min="0" placeholder="Edad máxima" value={maxEdad} onChange={(e) => setMaxEdad(e.target.value)} style={input} title="Edad máxima (años)" />
+          <button onClick={limpiarFiltros} style={{ ...btnGhost, padding: "9px 18px" }}>Limpiar filtros</button>
+        </div>
       </div>
 
       <p style={{ fontSize: 13, color: C.muted, margin: "0 0 10px" }}>{usuarios.length} usuario(s)</p>

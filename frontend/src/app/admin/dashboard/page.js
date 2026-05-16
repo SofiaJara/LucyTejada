@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [backupErr, setBackupErr] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [evalsDist, setEvalsDist] = useState([]);
 
   const cargarBackups = () => api("/api/admin/backups").then(setBackups).catch(() => {});
@@ -66,6 +67,21 @@ export default function AdminDashboard() {
     } finally {
       setBackupBusy(false);
       setTimeout(() => { setBackupOk(""); setBackupErr(""); }, 6000);
+    }
+  };
+
+  const eliminarBackup = async (archivo) => {
+    setConfirmDelete(null);
+    setBackupBusy(true); setBackupErr(""); setBackupOk("");
+    try {
+      await api(`/api/admin/backups/${archivo}`, { method: "DELETE" });
+      setBackupOk(`Backup ${archivo} eliminado.`);
+      cargarBackups();
+    } catch (e) {
+      setBackupErr(e.message);
+    } finally {
+      setBackupBusy(false);
+      setTimeout(() => { setBackupOk(""); setBackupErr(""); }, 4000);
     }
   };
 
@@ -119,6 +135,17 @@ export default function AdminDashboard() {
         confirmText="Sí, restaurar"
         onConfirm={() => restaurarBackup(confirmRestore.archivo)}
         onCancel={() => setConfirmRestore(null)}
+      />
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Eliminar respaldo"
+        message={confirmDelete
+          ? `Vas a eliminar permanentemente ${confirmDelete.archivo}. Esta acción no se puede deshacer.`
+          : ""}
+        type="warning"
+        confirmText="Sí, eliminar"
+        onConfirm={() => eliminarBackup(confirmDelete.archivo)}
+        onCancel={() => setConfirmDelete(null)}
       />
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.head, margin: "0 0 6px" }}>Panel de administración</h2>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 22px" }}>Resumen general del Centro Cultural Lucy Tejada</p>
@@ -217,6 +244,12 @@ export default function AdminDashboard() {
                         style={{ ...btnSm, marginLeft: 6, color: b.integridad === "alterado" ? "#bbb" : "#a06b1f", cursor: b.integridad === "alterado" ? "not-allowed" : "pointer" }}
                         title={b.integridad === "alterado" ? "Integridad alterada — no se puede restaurar" : "Restaurar este respaldo (reemplaza la base de datos actual)"}
                       >Restaurar</button>
+                      <button
+                        onClick={() => setConfirmDelete(b)}
+                        disabled={backupBusy}
+                        style={{ ...btnSm, marginLeft: 6, color: "#a8442e", cursor: backupBusy ? "not-allowed" : "pointer" }}
+                        title="Eliminar definitivamente este respaldo"
+                      >Eliminar</button>
                     </td>
                   </tr>
                 );

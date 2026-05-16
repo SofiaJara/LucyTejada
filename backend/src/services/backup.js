@@ -83,6 +83,15 @@ export function rutaBackup(nombre) {
   return ruta;
 }
 
+export function eliminarBackup(nombre) {
+  const ruta = rutaBackup(nombre);
+  if (!ruta) throw new Error('Backup no encontrado');
+  fs.unlinkSync(ruta);
+  const sidecar = rutaHash(ruta);
+  if (fs.existsSync(sidecar)) fs.unlinkSync(sidecar);
+  return { eliminado: path.basename(ruta) };
+}
+
 export async function restaurarBackup(nombre) {
   const ruta = rutaBackup(nombre);
   if (!ruta) throw new Error('Backup no encontrado');

@@ -3,6 +3,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
+import BarChart from "@/app/components/lt/BarChart";
+
+const VALORACION_SCORE = { Excelente: 4, Bueno: 3, Regular: 2, Deficiente: 1 };
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -53,6 +56,7 @@ function EvaluacionesPage() {
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
   const [evalExistente, setEvalExistente] = useState(null); // {fecha} si ya existe
+  const [historial, setHistorial] = useState([]);
 
   useEffect(() => {
     api("/api/grupos").then(gs => {
@@ -76,8 +80,12 @@ function EvaluacionesPage() {
 
   // cargar evaluación existente
   useEffect(() => {
-    if (!grupoId || !estudianteId || !periodo) return;
+    if (!grupoId || !estudianteId || !periodo) {
+      setHistorial([]);
+      return;
+    }
     api(`/api/evaluaciones/estudiante/${estudianteId}`).then(evals => {
+      setHistorial(evals);
       const existing = evals.find(e => e.grupoId === Number(grupoId) && e.periodo === periodo);
       if (existing) {
         setEvalu({
@@ -111,6 +119,8 @@ function EvaluacionesPage() {
         },
       });
       setModal({ open: true, title: "Evaluación guardada", message: "La evaluación fue registrada y notificada al estudiante.", type: "success" });
+      // refrescar historial para reflejar la evaluación recién guardada
+      api(`/api/evaluaciones/estudiante/${estudianteId}`).then(setHistorial);
     } catch (err) {
       setModal({ open: true, title: "Error", message: err.message, type: "error" });
     } finally {
@@ -266,6 +276,28 @@ function EvaluacionesPage() {
               {loading ? "Guardando..." : "Guardar evaluación"}
             </button>
           </div>
+
+          {historial.length >= 2 && (
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px", marginTop: 18 }}>
+              <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: C.head }}>
+                Tendencia histórica de {estudiante?.nombre} {estudiante?.apellido}
+              </h3>
+              <BarChart
+                data={[...historial].reverse().map(e => ({
+                  label: `${e.periodo} · ${e.grupo?.programa?.nombre || ""}`.trim(),
+                  valor: VALORACION_SCORE[e.valoracionGeneral] || 0,
+                }))}
+                labelKey="label"
+                valueKey="valor"
+                max={4}
+                color={C.btn}
+                height={20}
+              />
+              <p style={{ margin: "8px 0 0", fontSize: 11, color: C.muted }}>
+                Escala: 1 = Deficiente · 2 = Regular · 3 = Bueno · 4 = Excelente
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>
