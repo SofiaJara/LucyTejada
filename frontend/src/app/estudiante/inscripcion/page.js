@@ -51,6 +51,8 @@ export default function InscripcionPage() {
   });
 
   const inscripcionDeGrupo = (grupoId) => misInscripciones.find(i => i.grupoId === grupoId);
+  const otroGrupoDelPrograma = (programaId, grupoId) =>
+    misInscripciones.find(i => i.grupo?.programa?.id === programaId && i.grupoId !== grupoId);
 
   const confirmarCancelar = async () => {
     if (!cancelar) return;
@@ -172,6 +174,7 @@ export default function InscripcionPage() {
               const inscripcion = inscripcionDeGrupo(g.id);
               const ocupado = !!inscripcion;
               const sinCupos = cupos <= 0;
+              const otroDelPrograma = !ocupado ? otroGrupoDelPrograma(p.id, g.id) : null;
               return (
                 <div key={g.id} style={{
                   background: (!sinCupos || ocupado) ? C.bgCard : C.bgCardOff,
@@ -213,6 +216,19 @@ export default function InscripcionPage() {
                           cursor: "pointer",
                         }}
                       >Cancelar inscripción</button>
+                    </div>
+                  ) : otroDelPrograma ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{
+                        fontSize: 11, padding: "5px 12px", borderRadius: 4, fontWeight: 700,
+                        color: "#a06b1f", background: "#fdf5e8", textTransform: "uppercase",
+                        alignSelf: "flex-start",
+                      }}>
+                        Ya inscrito en otro grupo
+                      </span>
+                      <span style={{ fontSize: 12, color: C.mutedText }}>
+                        Para cambiarte, cancela tu inscripción en {otroDelPrograma.grupo.nombre}.
+                      </span>
                     </div>
                   ) : (
                     <button

@@ -69,19 +69,24 @@ export default function AdminDashboard() {
     }
   };
 
-  const descargarBackup = (archivo) => {
+  const descargarBackup = async (archivo) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("lt_token") : null;
     if (!token) return;
-    // descarga con header de auth vía fetch -> blob
-    fetch(`${apiUrl}/api/admin/backups/${archivo}/descargar`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = archivo;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
+    try {
+      const r = await fetch(`${apiUrl}/api/admin/backups/${archivo}/descargar`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!r.ok) throw new Error(`No se pudo descargar (${r.status})`);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = archivo;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setBackupErr(e.message);
+      setTimeout(() => setBackupErr(""), 4000);
+    }
   };
 
   if (!stats) return <p style={{ color: C.muted }}>Cargando...</p>;

@@ -28,7 +28,7 @@ export default function ProfileEditor() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false });
-  const [pwd, setPwd] = useState({ actual: "", nueva: "", confirmar: "" });
+  const [pwd, setPwd] = useState({ nueva: "", confirmar: "" });
 
   useEffect(() => {
     api("/api/users/me/perfil").then(setPerfil);
@@ -69,7 +69,7 @@ export default function ProfileEditor() {
     setLoading(true);
     try {
       await api("/api/users/me", { method: "PUT", body: { contrasena: pwd.nueva } });
-      setPwd({ actual: "", nueva: "", confirmar: "" });
+      setPwd({ nueva: "", confirmar: "" });
       setModal({ open: true, title: "Contraseña actualizada", message: "Tu contraseña fue cambiada. Úsala en tu próximo inicio de sesión.", type: "success" });
     } catch (err) {
       setModal({ open: true, title: "Error", message: err.message, type: "error" });
