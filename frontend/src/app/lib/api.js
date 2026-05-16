@@ -24,6 +24,15 @@ export async function api(path, { method = "GET", body, auth = true, headers = {
   let data;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!res.ok) {
+    if (res.status === 401 && auth && typeof window !== "undefined") {
+      // Token expirado o inválido — limpiar sesión y redirigir al login.
+      // Sólo aplica a llamadas autenticadas distintas a /auth/me (que el AuthProvider maneja).
+      if (!path.includes("/auth/me") && !path.includes("/auth/login")) {
+        localStorage.removeItem("lt_token");
+        localStorage.removeItem("lt_user");
+        window.dispatchEvent(new Event("lt:session-expired"));
+      }
+    }
     const error = new Error((data && data.error) || `Error ${res.status}`);
     error.status = res.status;
     error.data = data;

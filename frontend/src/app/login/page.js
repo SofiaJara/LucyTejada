@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
 
@@ -12,7 +12,17 @@ const C = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: C.bg }} />}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const expired = search.get("expired") === "1";
   const { user, loading: authLoading, login } = useAuth();
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -67,6 +77,15 @@ export default function LoginPage() {
           justifyContent: "center", padding: "36px", gap: 16,
         }}>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.head }}>Bienvenido</h2>
+          {expired && (
+            <div style={{
+              width: "100%", padding: "8px 12px", borderRadius: 6,
+              background: "#fdf5e8", color: "#a06b1f", fontSize: 13,
+              border: "1px solid #f0c884", textAlign: "center",
+            }}>
+              Tu sesión expiró. Inicia sesión de nuevo para continuar.
+            </div>
+          )}
           <input
             type="email"
             placeholder="correo electrónico"

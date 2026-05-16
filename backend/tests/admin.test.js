@@ -154,6 +154,18 @@ describe('admin', () => {
     assert.match(res.body.error, /otro grupo/i);
   });
 
+  test('GET /api/admin/usuarios filtra por activo/inactivo (CAR-10)', async () => {
+    const { admin } = await seedBasic();
+    await makeUser({ documento: 'INA-1', correo: 'inactivo@x.com', rol: 'estudiante', activo: false });
+    const t = await login(admin.correo, 'password123');
+    const rActivos = await request(app).get('/api/admin/usuarios?activo=true').set('Authorization', `Bearer ${t}`);
+    assert.ok(rActivos.body.every(u => u.activo === true));
+    assert.ok(!rActivos.body.find(u => u.correo === 'inactivo@x.com'));
+    const rInactivos = await request(app).get('/api/admin/usuarios?activo=false').set('Authorization', `Bearer ${t}`);
+    assert.equal(rInactivos.body.length, 1);
+    assert.equal(rInactivos.body[0].correo, 'inactivo@x.com');
+  });
+
   test('GET /api/admin/bitacora filtra por acción/entidad/fecha', async () => {
     const { admin } = await seedBasic();
     const t = await login(admin.correo, 'password123');

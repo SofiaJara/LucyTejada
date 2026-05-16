@@ -22,6 +22,15 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      router.push("/login?expired=1");
+    };
+    window.addEventListener("lt:session-expired", onExpired);
+    return () => window.removeEventListener("lt:session-expired", onExpired);
+  }, [router]);
+
   const login = useCallback(async (correo, contrasena) => {
     const data = await api("/api/auth/login", {
       method: "POST",

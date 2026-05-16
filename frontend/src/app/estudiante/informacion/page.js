@@ -43,10 +43,9 @@ export default function InformacionEstudiantePage() {
     return <p style={{ color: C.muted }}>Cargando información...</p>;
   }
 
-  const inscripcion = perfil.inscripciones?.[0];
-  const grupo = inscripcion?.grupo;
-  const programa = grupo?.programa;
-  const profesor = grupo?.profesor;
+  const inscripciones = perfil.inscripciones || [];
+  const primera = inscripciones[0];
+  const programaPrincipal = primera?.grupo?.programa;
   const iniciales = `${perfil.nombre?.[0] || ""}${perfil.apellido?.[0] || ""}`;
 
   return (
@@ -66,7 +65,12 @@ export default function InformacionEstudiantePage() {
             {perfil.nombre} {perfil.apellido}
           </div>
           <div style={{ fontSize: 14, color: C.muted }}>
-            Estudiante {programa ? `· ${programa.nombre}` : ""}
+            Estudiante{programaPrincipal ? ` · ${programaPrincipal.nombre}` : ""}
+            {inscripciones.length > 1 && (
+              <span style={{ marginLeft: 6, color: C.btn, fontWeight: 600 }}>
+                (+{inscripciones.length - 1} programa{inscripciones.length - 1 > 1 ? "s" : ""})
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 13, color: C.label }}>Documento: {perfil.documento}</div>
         </div>
@@ -82,27 +86,40 @@ export default function InformacionEstudiantePage() {
             <Row label="Ciudad / Barrio" value={[perfil.ciudad, perfil.barrio].filter(Boolean).join(" · ")} />
           </Section>
 
-          <Section title="Datos de matrícula">
-            {inscripcion ? (
-              <>
-                <Row label="Programa" value={programa?.nombre} />
-                <Row label="Grupo" value={grupo?.nombre} />
-                <Row label="Docente asignado" value={profesor ? `Prof. ${profesor.nombre} ${profesor.apellido}` : "Sin asignar"} />
-                <Row label="Salón" value={grupo?.salon} />
-                <Row label="Horario" value={grupo?.horario} />
-                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                  <span style={{ fontSize: 13, color: C.label, width: 160 }}>Estado</span>
-                  <span style={{
-                    fontSize: 13, color: C.btn, border: `1.5px solid ${C.btn}`,
-                    borderRadius: 4, padding: "2px 12px", fontWeight: 600,
-                    textTransform: "capitalize",
-                  }}>{inscripcion.estado}</span>
-                </div>
-              </>
-            ) : (
+          <Section title={inscripciones.length > 1 ? `Matrículas activas (${inscripciones.length})` : "Datos de matrícula"}>
+            {inscripciones.length === 0 ? (
               <p style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>
                 Aún no estás inscrito en ningún programa. Ve a Inscripción para elegir uno.
               </p>
+            ) : (
+              inscripciones.map((ins, idx) => {
+                const g = ins.grupo;
+                const p = g?.programa;
+                const prof = g?.profesor;
+                return (
+                  <div key={ins.id} style={{
+                    marginBottom: idx < inscripciones.length - 1 ? 14 : 0,
+                    paddingBottom: idx < inscripciones.length - 1 ? 12 : 0,
+                    borderBottom: idx < inscripciones.length - 1 ? `1px dashed ${C.divider}` : "none",
+                  }}>
+                    <Row label="Programa" value={p?.nombre} />
+                    <Row label="Grupo" value={g?.nombre} />
+                    <Row label="Docente asignado" value={prof ? `Prof. ${prof.nombre} ${prof.apellido}` : "Sin asignar"} />
+                    <Row label="Salón" value={g?.salon} />
+                    <Row label="Horario" value={g?.horario} />
+                    <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                      <span style={{ fontSize: 13, color: C.label, width: 160 }}>Estado</span>
+                      <span style={{
+                        fontSize: 13,
+                        color: ins.estado === "lista_espera" ? "#a06b1f" : C.btn,
+                        border: `1.5px solid ${ins.estado === "lista_espera" ? "#a06b1f" : C.btn}`,
+                        borderRadius: 4, padding: "2px 12px", fontWeight: 600,
+                        textTransform: "capitalize",
+                      }}>{ins.estado === "lista_espera" ? "Lista de espera" : ins.estado}</span>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </Section>
         </div>

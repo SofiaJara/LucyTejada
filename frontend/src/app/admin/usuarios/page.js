@@ -34,6 +34,7 @@ function AdminUsuariosPage() {
   const [ciudadFiltro, setCiudadFiltro] = useState("");
   const [barrioFiltro, setBarrioFiltro] = useState("");
   const [grupoFiltro, setGrupoFiltro] = useState("");
+  const [activoFiltro, setActivoFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
@@ -52,11 +53,12 @@ function AdminUsuariosPage() {
     if (ciudadFiltro) params.set("ciudad", ciudadFiltro);
     if (barrioFiltro) params.set("barrio", barrioFiltro);
     if (grupoFiltro) params.set("grupoId", grupoFiltro);
+    if (activoFiltro) params.set("activo", activoFiltro);
     if (busqueda) params.set("busqueda", busqueda);
     const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/usuarios${q}`).then(setUsuarios);
   };
-  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, busqueda]);
+  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, busqueda]);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (u) => {
@@ -106,8 +108,18 @@ function AdminUsuariosPage() {
     }
   };
 
+  const reactivar = async (u) => {
+    try {
+      await api(`/api/admin/usuarios/${u.id}`, { method: "PUT", body: { ...u, activo: true } });
+      cargar();
+      setModal({ open: true, title: "Usuario reactivado", message: `${u.nombre} ${u.apellido} fue reactivado.`, type: "success" });
+    } catch (err) {
+      setModal({ open: true, title: "Error", message: err.message, type: "error" });
+    }
+  };
+
   const limpiarFiltros = () => {
-    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setGrupoFiltro(""); setBusqueda("");
+    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setGrupoFiltro(""); setActivoFiltro(""); setBusqueda("");
   };
 
   return (
@@ -139,7 +151,7 @@ function AdminUsuariosPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo usuario</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
         <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={input} />
         <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={input}>
           <option value="">Todos los roles</option>
@@ -158,6 +170,11 @@ function AdminUsuariosPage() {
           {grupos.map(g => (
             <option key={g.id} value={g.id}>{g.programa.nombre} · {g.nombre}</option>
           ))}
+        </select>
+        <select value={activoFiltro} onChange={(e) => setActivoFiltro(e.target.value)} style={input} title="Estado">
+          <option value="">Activos e inactivos</option>
+          <option value="true">Sólo activos</option>
+          <option value="false">Sólo inactivos</option>
         </select>
         <input placeholder="Ciudad" value={ciudadFiltro} onChange={(e) => setCiudadFiltro(e.target.value)} style={input} />
         <input placeholder="Barrio" value={barrioFiltro} onChange={(e) => setBarrioFiltro(e.target.value)} style={input} />
@@ -193,7 +210,11 @@ function AdminUsuariosPage() {
                 </td>
                 <td style={{ ...td, textAlign: "right" }}>
                   <button onClick={() => abrirEditar(u)} style={btnSm}>Editar</button>
-                  {u.activo && <button onClick={() => setConfirmDel(u)} style={{ ...btnSm, color: C.danger, marginLeft: 6 }}>Desactivar</button>}
+                  {u.activo ? (
+                    <button onClick={() => setConfirmDel(u)} style={{ ...btnSm, color: C.danger, marginLeft: 6 }}>Desactivar</button>
+                  ) : (
+                    <button onClick={() => reactivar(u)} style={{ ...btnSm, marginLeft: 6 }}>Reactivar</button>
+                  )}
                 </td>
               </tr>
             ))}

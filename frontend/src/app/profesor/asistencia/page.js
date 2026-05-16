@@ -119,6 +119,8 @@ export default function AsistenciaPage() {
 
   const presentes = Object.values(registros).filter(r => r.asistio).length;
   const total = Object.keys(registros).length;
+  const hoy = new Date().toDateString();
+  const claseHoy = !claseId && clases.find(c => new Date(c.fecha).toDateString() === hoy);
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
@@ -229,6 +231,14 @@ export default function AsistenciaPage() {
             </table>
           </div>
 
+          {claseHoy && (
+            <div style={{
+              marginTop: 14, padding: "10px 14px", background: "#fdf5e8",
+              border: "1px solid #f0c884", borderRadius: 6, color: "#a06b1f", fontSize: 13,
+            }}>
+              Ya existe una clase registrada hoy ({new Date(claseHoy.fecha).toLocaleDateString("es-CO")}{claseHoy.tema ? ` · ${claseHoy.tema}` : ""}). Si guardas como “Nueva clase” se creará otra adicional. Selecciónala en el desplegable para editarla.
+            </div>
+          )}
           <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 14, color: C.body }}>Asistencia: {presentes} / {total} estudiantes</span>
             <button

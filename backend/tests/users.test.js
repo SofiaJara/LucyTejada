@@ -19,6 +19,28 @@ describe('users', () => {
     assert.equal(res.body.contrasena, undefined);
   });
 
+  test('GET /api/users/me/perfil devuelve todas las inscripciones cuando hay varias (CAR-03)', async () => {
+    const { estudiante, grupo, profesor } = await seedBasic();
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    const otroPrograma = await prisma.programa.create({
+      data: { nombre: 'Guitarra básica', categoria: 'Música', duracion: 'Semestre' },
+    });
+    const otroGrupo = await prisma.grupo.create({
+      data: {
+        nombre: 'Grupo A', cupoMaximo: 5, totalClases: 10,
+        horario: 'Mar 10am', salon: 'Salón 2',
+        programaId: otroPrograma.id, profesorId: profesor.id,
+      },
+    });
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: otroGrupo.id } });
+    const t = await login(estudiante.correo, 'password123');
+    const res = await request(app).get('/api/users/me/perfil').set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.inscripciones.length, 2);
+    const programas = res.body.inscripciones.map(i => i.grupo.programa.nombre).sort();
+    assert.deepEqual(programas, ['Guitarra básica', 'Piano básico']);
+  });
+
   test('PUT /api/users/me actualiza datos propios', async () => {
     const { estudiante } = await seedBasic();
     const t = await login(estudiante.correo, 'password123');

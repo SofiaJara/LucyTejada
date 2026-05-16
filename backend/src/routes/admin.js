@@ -48,12 +48,14 @@ router.get('/dashboard', async (req, res) => {
 });
 
 router.get('/usuarios', async (req, res) => {
-  const { rol, genero, ciudad, barrio, busqueda, grupoId, programaId } = req.query;
+  const { rol, genero, ciudad, barrio, busqueda, grupoId, programaId, activo } = req.query;
   const where = {};
   if (rol) where.rol = rol;
   if (genero) where.genero = genero;
   if (ciudad) where.ciudad = { contains: ciudad };
   if (barrio) where.barrio = { contains: barrio };
+  if (activo === 'true') where.activo = true;
+  else if (activo === 'false') where.activo = false;
   if (grupoId) where.inscripciones = { some: { grupoId: Number(grupoId) } };
   else if (programaId) where.inscripciones = { some: { grupo: { programaId: Number(programaId) } } };
   if (busqueda) {
