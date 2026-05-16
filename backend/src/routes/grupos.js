@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
+import { promoverListaEspera } from '../services/listaEspera.js';
 
 const router = express.Router();
 
@@ -129,7 +130,22 @@ router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
     req,
   });
 
-  res.json(grupo);
+  // Si subió el cupo o se reactivó el grupo, promover lista de espera disponible.
+  let promovidos = [];
+  const subioCupo = cupoMaximo !== undefined && Number(cupoMaximo) > previo.cupoMaximo;
+  const reactivado = activo === true && previo.activo === false;
+  if (grupo.activo && (subioCupo || reactivado)) {
+    promovidos = await promoverListaEspera(id);
+    if (promovidos.length > 0) {
+      await registrar({
+        accion: 'update', entidad: 'inscripcion', entidadId: null,
+        descripcion: `Lista de espera: ${promovidos.length} estudiante(s) promovidos en ${previo.programa.nombre} · ${previo.nombre}`,
+        req,
+      });
+    }
+  }
+
+  res.json({ ...grupo, promovidos });
 });
 
 router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {

@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
+import { promoverListaEspera } from '../services/listaEspera.js';
 
 const router = express.Router();
 
@@ -96,6 +97,7 @@ router.delete('/:id', authenticate, async (req, res) => {
   if (inscripcion.estudianteId !== req.user.id && req.user.rol !== 'admin') {
     return res.status(403).json({ error: 'No autorizado' });
   }
+  const eraActiva = inscripcion.estado === 'activo';
   await prisma.inscripcion.delete({ where: { id: Number(req.params.id) } });
 
   await registrar({
@@ -113,7 +115,20 @@ router.delete('/:id', authenticate, async (req, res) => {
     },
   });
 
-  res.json({ ok: true });
+  // Si liberamos un cupo activo, promover de la lista de espera (FIFO).
+  let promovidos = [];
+  if (eraActiva) {
+    promovidos = await promoverListaEspera(inscripcion.grupoId, { limite: 1 });
+    if (promovidos.length > 0) {
+      await registrar({
+        accion: 'update', entidad: 'inscripcion', entidadId: promovidos[0].id,
+        descripcion: `Lista de espera: ${promovidos[0].estudiante} promovido a activo en ${promovidos[0].programa} · ${promovidos[0].grupo}`,
+        req,
+      });
+    }
+  }
+
+  res.json({ ok: true, promovidos });
 });
 
 export default router;

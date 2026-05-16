@@ -5,6 +5,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
 import { calcularDesercion } from '../services/desercion.js';
 import { crearBackup, listarBackups, rutaBackup, restaurarBackup, eliminarBackup } from '../services/backup.js';
+import { promoverListaEspera } from '../services/listaEspera.js';
 
 const router = express.Router();
 
@@ -36,6 +37,30 @@ router.get('/dashboard', async (req, res) => {
   });
   const ciudades = ciudadRaw.map(c => ({ ciudad: c.ciudad || 'Sin dato', count: c._count._all }));
 
+  // Tendencia mensual de inscripciones (últimos 6 meses)
+  const inicio = new Date();
+  inicio.setMonth(inicio.getMonth() - 5);
+  inicio.setDate(1); inicio.setHours(0, 0, 0, 0);
+  const inscRecientes = await prisma.inscripcion.findMany({
+    where: { fechaInscripcion: { gte: inicio } },
+    select: { fechaInscripcion: true },
+  });
+  const meses = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(inicio);
+    d.setMonth(inicio.getMonth() + i);
+    meses.push({
+      mes: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      count: 0,
+    });
+  }
+  inscRecientes.forEach(r => {
+    const f = r.fechaInscripcion;
+    const clave = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+    const slot = meses.find(m => m.mes === clave);
+    if (slot) slot.count++;
+  });
+
   res.json({
     totalEstudiantes,
     totalProfesores,
@@ -48,6 +73,7 @@ router.get('/dashboard', async (req, res) => {
     enRiesgoDesercion,
     generos,
     ciudades,
+    tendenciaInscripciones: meses,
   });
 });
 
@@ -128,14 +154,27 @@ router.post('/usuarios', async (req, res) => {
 router.put('/usuarios/:id', async (req, res) => {
   const { documento, nombre, apellido, correo, rol, telefono, direccion, ciudad, barrio, genero, activo, contrasena } = req.body;
   const data = { documento, nombre, apellido, correo, rol, telefono, direccion, ciudad, barrio, genero, activo };
-  if (contrasena) data.contrasena = await bcrypt.hash(contrasena, 10);
+  const cambioContrasena = !!contrasena;
+  if (cambioContrasena) data.contrasena = await bcrypt.hash(contrasena, 10);
   const usuario = await prisma.usuario.update({ where: { id: Number(req.params.id) }, data });
   const { contrasena: _, ...safe } = usuario;
   await registrar({
     accion: 'update', entidad: 'usuario', entidadId: usuario.id,
-    descripcion: `Admin actualizó usuario: ${correo}`,
+    descripcion: cambioContrasena
+      ? `Admin actualizó usuario: ${correo} (contraseña restablecida)`
+      : `Admin actualizó usuario: ${correo}`,
     req,
   });
+  if (cambioContrasena) {
+    await prisma.notificacion.create({
+      data: {
+        usuarioId: usuario.id,
+        titulo: 'Tu contraseña fue restablecida',
+        mensaje: 'Un administrador del Centro Cultural Lucy Tejada restableció tu contraseña. Si no lo solicitaste, contacta al equipo administrativo.',
+        categoria: 'administrativo',
+      },
+    });
+  }
   res.json(safe);
 });
 
@@ -406,6 +445,46 @@ router.post('/backups/:archivo/restaurar', async (req, res) => {
     if (e.message.includes('integridad')) return res.status(409).json({ error: e.message });
     res.status(500).json({ error: e.message });
   }
+});
+
+// Lista de espera global por grupo
+router.get('/lista-espera', async (req, res) => {
+  const inscripciones = await prisma.inscripcion.findMany({
+    where: { estado: 'lista_espera' },
+    orderBy: { fechaInscripcion: 'asc' },
+    include: {
+      estudiante: { select: { id: true, nombre: true, apellido: true, correo: true, documento: true } },
+      grupo: { include: { programa: true, _count: { select: { inscripciones: { where: { estado: 'activo' } } } } } },
+    },
+  });
+  res.json(inscripciones.map(i => ({
+    id: i.id,
+    fechaInscripcion: i.fechaInscripcion,
+    estudianteId: i.estudianteId,
+    estudiante: `${i.estudiante.nombre} ${i.estudiante.apellido}`,
+    documento: i.estudiante.documento,
+    correo: i.estudiante.correo,
+    grupoId: i.grupoId,
+    grupo: i.grupo.nombre,
+    programa: i.grupo.programa.nombre,
+    cupoMaximo: i.grupo.cupoMaximo,
+    activos: i.grupo._count.inscripciones,
+    cuposLibres: Math.max(0, i.grupo.cupoMaximo - i.grupo._count.inscripciones),
+  })));
+});
+
+// Promover manualmente lista de espera de un grupo (admin)
+router.post('/grupos/:id/promover-espera', async (req, res) => {
+  const { limite } = req.body || {};
+  const promovidos = await promoverListaEspera(Number(req.params.id), limite ? { limite: Number(limite) } : undefined);
+  if (promovidos.length > 0) {
+    await registrar({
+      accion: 'update', entidad: 'inscripcion', entidadId: null,
+      descripcion: `Admin promovió ${promovidos.length} estudiante(s) de lista de espera en grupo #${req.params.id}`,
+      req,
+    });
+  }
+  res.json({ promovidos });
 });
 
 // Bitácora

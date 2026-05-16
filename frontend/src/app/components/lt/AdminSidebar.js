@@ -10,6 +10,7 @@ const navItems = [
   { label: "Usuarios",       href: "/admin/usuarios" },
   { label: "Programas",      href: "/admin/programas" },
   { label: "Grupos",         href: "/admin/grupos" },
+  { label: "Lista de espera",href: "/admin/lista-espera" },
   { label: "Reportes",       href: "/admin/reportes" },
   { label: "Notificaciones", href: "/admin/notificaciones", showBadge: true },
   { label: "Bitácora",       href: "/admin/bitacora" },

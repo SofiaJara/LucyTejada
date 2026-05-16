@@ -114,7 +114,7 @@ export default function AdminDashboard() {
     { label: "Grupos activos", value: stats.totalGrupos, href: "/admin/grupos" },
     { label: "Inscripciones activas", value: stats.inscripcionesActivas, href: "/admin/reportes?tab=inscripciones" },
     { label: "Evaluaciones", value: stats.evaluacionesRecientes, href: "/admin/reportes?tab=evaluaciones" },
-    { label: "Lista de espera", value: stats.listaEspera ?? 0, href: "/admin/grupos" },
+    { label: "Lista de espera", value: stats.listaEspera ?? 0, href: "/admin/lista-espera" },
     { label: "Estudiantes inactivos", value: stats.estudiantesInactivos ?? 0, href: "/admin/usuarios?rol=estudiante&activo=false" },
     { label: "En riesgo de deserción", value: stats.enRiesgoDesercion ?? 0, href: "/admin/reportes?tab=desercion", highlight: (stats.enRiesgoDesercion ?? 0) > 0 },
   ];
@@ -193,6 +193,15 @@ export default function AdminDashboard() {
           <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Aún no se han registrado evaluaciones.</p>
         ) : (
           <BarChart data={evalsDist} labelKey="valoracion" valueKey="count" color="#3A6048" />
+        )}
+      </div>
+
+      <div style={{ ...card, marginBottom: 22 }}>
+        <h3 style={h3}>Inscripciones por mes (últimos 6 meses)</h3>
+        {!stats.tendenciaInscripciones || stats.tendenciaInscripciones.every(t => t.count === 0) ? (
+          <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Sin inscripciones recientes en el período.</p>
+        ) : (
+          <BarChart data={stats.tendenciaInscripciones} labelKey="mes" valueKey="count" color="#5a8a6e" />
         )}
       </div>
 
