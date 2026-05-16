@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/lib/api";
+import BarChart from "@/app/components/lt/BarChart";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -13,15 +14,34 @@ const C = {
 export default function DashboardProfesorPage() {
   const [grupos, setGrupos] = useState([]);
   const [notifs, setNotifs] = useState([]);
+  const [asistPorGrupo, setAsistPorGrupo] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       api("/api/grupos"),
       api("/api/notificaciones"),
-    ]).then(([g, n]) => {
+    ]).then(async ([g, n]) => {
       setGrupos(g);
       setNotifs(n);
+      if (g.length > 0) {
+        const detalles = await Promise.all(
+          g.map(async (gr) => {
+            const clases = await api(`/api/asistencia/grupos/${gr.id}/clases`).catch(() => []);
+            let total = 0, presentes = 0;
+            clases.forEach(c => {
+              total += c.asistencias.length;
+              presentes += c.asistencias.filter(a => a.asistio).length;
+            });
+            return {
+              label: `${gr.programa.nombre} · ${gr.nombre}`,
+              pct: total > 0 ? Math.round((presentes / total) * 100) : 0,
+              registradas: total,
+            };
+          })
+        );
+        setAsistPorGrupo(detalles);
+      }
     }).finally(() => setLoading(false));
   }, []);
 
@@ -30,6 +50,7 @@ export default function DashboardProfesorPage() {
   const totalEstudiantes = grupos.reduce((sum, g) => sum + (g._count?.inscripciones || 0), 0);
   const totalClases = grupos.reduce((sum, g) => sum + (g._count?.clases || 0), 0);
   const noLeidas = notifs.filter(n => !n.leida).length;
+  const conRegistro = asistPorGrupo.filter(a => a.registradas > 0);
 
   const metrics = [
     { label: "Grupos activos", value: grupos.length, href: "/profesor/grupos" },
@@ -57,6 +78,25 @@ export default function DashboardProfesorPage() {
           </Link>
         ))}
       </div>
+
+      {grupos.length > 0 && (
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+          padding: "18px 22px", marginBottom: 22,
+        }}>
+          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head }}>
+            % Asistencia por grupo
+          </h3>
+          {conRegistro.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: C.muted }}>
+              Aún no has registrado asistencia. Empieza desde{" "}
+              <Link href="/profesor/asistencia" style={{ color: C.btn, fontWeight: 600 }}>Asistencia</Link>.
+            </p>
+          ) : (
+            <BarChart data={conRegistro} labelKey="label" valueKey="pct" max={100} />
+          )}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "18px 20px" }}>
