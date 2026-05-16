@@ -19,24 +19,76 @@ export default function AdminGruposPage() {
   const [grupos, setGrupos] = useState([]);
   const [programas, setProgramas] = useState([]);
   const [profesores, setProfesores] = useState([]);
+  const [estudiantes, setEstudiantes] = useState([]);
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
   const [confirmDel, setConfirmDel] = useState(null);
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [programaFiltro, setProgramaFiltro] = useState("");
+  const [activoFiltro, setActivoFiltro] = useState("");
+  const [inscribir, setInscribir] = useState(null); // grupo a inscribir
+  const [inscribirEstId, setInscribirEstId] = useState("");
+  const [inscribirBusy, setInscribirBusy] = useState(false);
 
   const cargar = () => {
     Promise.all([
       api("/api/grupos?incluirInactivos=true"),
-      api("/api/programas", { auth: false }),
+      api("/api/programas?incluirInactivos=true", { auth: false }),
       api("/api/users/profesores"),
-    ]).then(([g, p, prof]) => {
+      api("/api/admin/usuarios?rol=estudiante&activo=true"),
+    ]).then(([g, p, prof, est]) => {
       setGrupos(g);
       setProgramas(p);
       setProfesores(prof);
+      setEstudiantes(est);
     });
   };
   useEffect(() => { cargar(); }, []);
+
+  const gruposFiltrados = grupos.filter(g => {
+    if (programaFiltro && g.programaId !== Number(programaFiltro)) return false;
+    if (activoFiltro === "true" && !g.activo) return false;
+    if (activoFiltro === "false" && g.activo) return false;
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      const haystack = `${g.nombre} ${g.programa.nombre} ${g.horario} ${g.salon} ${g.profesor ? g.profesor.nombre + " " + g.profesor.apellido : ""}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const idsInscritos = (grupo) => new Set((grupo.inscripciones || []).map(i => i.estudiante?.id ?? i.estudianteId));
+  const candidatosParaGrupo = (grupo) => {
+    if (!grupo) return [];
+    const ya = idsInscritos(grupo);
+    return estudiantes.filter(e => !ya.has(e.id));
+  };
+
+  const abrirInscribir = (g) => {
+    setInscribir(g);
+    setInscribirEstId("");
+  };
+  const cerrarInscribir = () => { setInscribir(null); setInscribirEstId(""); };
+
+  const confirmarInscribir = async () => {
+    if (!inscribir || !inscribirEstId) return;
+    setInscribirBusy(true);
+    try {
+      await api("/api/admin/inscripciones", {
+        method: "POST",
+        body: { estudianteId: Number(inscribirEstId), grupoId: inscribir.id },
+      });
+      cerrarInscribir();
+      cargar();
+      setModal({ open: true, title: "Estudiante inscrito", message: "La inscripción se registró y se notificó al estudiante.", type: "success" });
+    } catch (err) {
+      setModal({ open: true, title: "No se pudo inscribir", message: err.message, type: "error" });
+    } finally {
+      setInscribirBusy(false);
+    }
+  };
 
   const reactivar = async (g) => {
     try {
@@ -168,6 +220,31 @@ export default function AdminGruposPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo grupo</button>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, marginBottom: 14 }}>
+        <input
+          placeholder="Buscar por grupo, programa, profesor, salón..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={inputStyle}
+        />
+        <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={inputStyle}>
+          <option value="">Todos los programas</option>
+          {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+        </select>
+        <select value={activoFiltro} onChange={(e) => setActivoFiltro(e.target.value)} style={inputStyle}>
+          <option value="">Activos e inactivos</option>
+          <option value="true">Sólo activos</option>
+          <option value="false">Sólo inactivos</option>
+        </select>
+        <button
+          onClick={() => { setBusqueda(""); setProgramaFiltro(""); setActivoFiltro(""); }}
+          disabled={!busqueda && !programaFiltro && !activoFiltro}
+          style={{ ...btnGhost, opacity: (busqueda || programaFiltro || activoFiltro) ? 1 : 0.55 }}
+        >Limpiar</button>
+      </div>
+
+      <p style={{ fontSize: 13, color: C.muted, margin: "0 0 10px" }}>{gruposFiltrados.length} grupo(s)</p>
+
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -178,7 +255,7 @@ export default function AdminGruposPage() {
             </tr>
           </thead>
           <tbody>
-            {grupos.map(g => (
+            {gruposFiltrados.map(g => (
               <tr key={g.id} style={{ borderBottom: `1px solid ${C.divider}`, opacity: g.activo ? 1 : 0.6 }}>
                 <td style={td}>
                   {g.programa.nombre}
@@ -191,6 +268,9 @@ export default function AdminGruposPage() {
                 <td style={{ ...td, fontWeight: 600, color: C.btn }}>{g._count?.inscripciones || 0}</td>
                 <td style={td}>{g.cupoMaximo}</td>
                 <td style={{ ...td, textAlign: "right" }}>
+                  {g.activo && (
+                    <button onClick={() => abrirInscribir(g)} style={{ ...btnSm, marginRight: 6 }} title="Inscribir estudiante manualmente">+ Inscribir</button>
+                  )}
                   <button onClick={() => abrirEditar(g)} style={btnSm}>Editar</button>
                   {g.activo ? (
                     <button onClick={() => setConfirmDel(g)} style={{ ...btnSm, color: C.danger, marginLeft: 6 }}>Desactivar</button>
@@ -202,10 +282,51 @@ export default function AdminGruposPage() {
             ))}
           </tbody>
         </table>
-        {grupos.length === 0 && (
-          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>Sin grupos. Crea uno nuevo.</p>
+        {gruposFiltrados.length === 0 && (
+          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>
+            {grupos.length === 0 ? "Sin grupos. Crea uno nuevo." : "Ningún grupo coincide con los filtros."}
+          </p>
         )}
       </div>
+
+      {inscribir && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(28,38,32,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) cerrarInscribir(); }}>
+          <div style={{ background: "#fff", borderRadius: 10, width: "100%", maxWidth: 520, border: `1.5px solid ${C.border}` }}>
+            <div style={{ padding: "16px 22px", borderBottom: `1px solid ${C.border}` }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.head }}>Inscribir estudiante manualmente</h3>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: C.muted }}>
+                {inscribir.programa.nombre} · {inscribir.nombre} — cupo {inscribir._count?.inscripciones || 0}/{inscribir.cupoMaximo}
+              </p>
+            </div>
+            <div style={{ padding: 22 }}>
+              <label style={{ fontSize: 12, color: "#4a5a52", marginBottom: 4, display: "block", fontWeight: 500 }}>Estudiante *</label>
+              <select value={inscribirEstId} onChange={(e) => setInscribirEstId(e.target.value)} style={inputStyle} autoFocus>
+                <option value="">— Selecciona un estudiante —</option>
+                {candidatosParaGrupo(inscribir).map(e => (
+                  <option key={e.id} value={e.id}>{e.nombre} {e.apellido} · {e.documento}</option>
+                ))}
+              </select>
+              {candidatosParaGrupo(inscribir).length === 0 && (
+                <p style={{ margin: "10px 0 0", fontSize: 12, color: C.muted }}>
+                  Todos los estudiantes activos ya están inscritos en este grupo.
+                </p>
+              )}
+              <p style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>
+                Si no quedan cupos, la inscripción quedará en lista de espera y el estudiante recibirá una notificación.
+              </p>
+            </div>
+            <div style={{ padding: "14px 22px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={cerrarInscribir} style={btnGhost}>Cancelar</button>
+              <button
+                onClick={confirmarInscribir}
+                disabled={inscribirBusy || !inscribirEstId}
+                style={{ ...btnPrimary, opacity: (inscribirBusy || !inscribirEstId) ? 0.55 : 1, cursor: (inscribirBusy || !inscribirEstId) ? "not-allowed" : "pointer" }}
+              >{inscribirBusy ? "Inscribiendo..." : "Inscribir"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

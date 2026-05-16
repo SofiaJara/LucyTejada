@@ -66,4 +66,23 @@ describe('deserción (CAR-07/08)', () => {
     assert.equal(res.status, 200);
     assert.equal(typeof res.body.enRiesgoDesercion, 'number');
   });
+
+  test('GET /api/admin/reportes/desercion?ventana=N respeta la ventana', async () => {
+    const { admin, otro, grupo } = await crearEntorno();
+    const ahora = Date.now();
+    // Tres clases dentro de los últimos 10 días — entran en cualquier ventana.
+    for (const d of [10, 7, 4]) {
+      const c = await prisma.clase.create({ data: { grupoId: grupo.id, fecha: new Date(ahora - d * 86400000) } });
+      await prisma.asistencia.create({ data: { claseId: c.id, estudianteId: otro.id, asistio: false } });
+    }
+    const t = await login(admin.correo, 'password123');
+    const amplia = await request(app).get('/api/admin/reportes/desercion?ventana=60').set('Authorization', `Bearer ${t}`);
+    assert.equal(amplia.status, 200);
+    assert.ok(amplia.body.find(r => r.estudianteId === otro.id), 'ventana amplia debe detectar al estudiante en riesgo');
+
+    // Una ventana de 1 día deja sólo 0 clases recientes → bajo el mínimo de 3.
+    const corta = await request(app).get('/api/admin/reportes/desercion?ventana=1').set('Authorization', `Bearer ${t}`);
+    assert.equal(corta.status, 200);
+    assert.equal(corta.body.length, 0, 'ventana muy estrecha no debe arrojar riesgos');
+  });
 });

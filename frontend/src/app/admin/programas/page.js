@@ -19,9 +19,25 @@ export default function AdminProgramasPage() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [activoFiltro, setActivoFiltro] = useState("");
 
   const cargar = () => api("/api/programas?incluirInactivos=true").then(setProgramas);
   useEffect(() => { cargar(); }, []);
+
+  const categorias = Array.from(new Set(programas.map(p => p.categoria))).sort();
+  const programasFiltrados = programas.filter(p => {
+    if (categoriaFiltro && p.categoria !== categoriaFiltro) return false;
+    if (activoFiltro === "true" && !p.activo) return false;
+    if (activoFiltro === "false" && p.activo) return false;
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      const hay = `${p.nombre} ${p.categoria} ${p.descripcion || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   const reactivar = async (p) => {
     try {
@@ -121,8 +137,33 @@ export default function AdminProgramasPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo programa</button>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, marginBottom: 14 }}>
+        <input
+          placeholder="Buscar por nombre, categoría o descripción..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={inputStyle}
+        />
+        <select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)} style={inputStyle}>
+          <option value="">Todas las categorías</option>
+          {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={activoFiltro} onChange={(e) => setActivoFiltro(e.target.value)} style={inputStyle}>
+          <option value="">Activos e inactivos</option>
+          <option value="true">Sólo activos</option>
+          <option value="false">Sólo inactivos</option>
+        </select>
+        <button
+          onClick={() => { setBusqueda(""); setCategoriaFiltro(""); setActivoFiltro(""); }}
+          disabled={!busqueda && !categoriaFiltro && !activoFiltro}
+          style={{ ...btnGhost, opacity: (busqueda || categoriaFiltro || activoFiltro) ? 1 : 0.55 }}
+        >Limpiar</button>
+      </div>
+
+      <p style={{ fontSize: 13, color: C.muted, margin: "0 0 10px" }}>{programasFiltrados.length} programa(s)</p>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-        {programas.map(p => (
+        {programasFiltrados.map(p => (
           <div key={p.id} style={{
             background: p.activo ? C.card : "#f5f5f5",
             border: `1px solid ${p.activo ? C.border : "#d8d8d8"}`,
@@ -152,6 +193,11 @@ export default function AdminProgramasPage() {
             </div>
           </div>
         ))}
+        {programasFiltrados.length === 0 && (
+          <p style={{ gridColumn: "1 / -1", padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            {programas.length === 0 ? "Sin programas. Crea uno nuevo." : "Ningún programa coincide con los filtros."}
+          </p>
+        )}
       </div>
     </div>
   );

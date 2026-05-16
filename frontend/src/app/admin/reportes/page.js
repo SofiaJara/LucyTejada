@@ -29,6 +29,7 @@ export default function ReportesPage() {
   const [profesorFiltro, setProfesorFiltro] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
+  const [ventana, setVentana] = useState("30");
   const [exportando, setExportando] = useState(false);
   const [aviso, setAviso] = useState("");
 
@@ -58,9 +59,10 @@ export default function ReportesPage() {
     } else if (tab === "evaluaciones") {
       api(`/api/admin/reportes/evaluaciones${q}`).then(setEvals);
     } else if (tab === "desercion") {
-      api("/api/admin/reportes/desercion").then(setDesercion);
+      const v = ventana ? `?ventana=${ventana}` : "";
+      api(`/api/admin/reportes/desercion${v}`).then(setDesercion);
     }
-  }, [tab, programaFiltro, profesorFiltro, desde, hasta]);
+  }, [tab, programaFiltro, profesorFiltro, desde, hasta, ventana]);
 
   const demografiaRows = demografia
     ? [
@@ -179,6 +181,21 @@ export default function ReportesPage() {
                   <button onClick={limpiarFiltros} style={btnGhost} title="Limpiar filtros">×</button>
                 )}
               </>
+            )}
+            {tab === "desercion" && (
+              <select
+                value={ventana}
+                onChange={(e) => setVentana(e.target.value)}
+                style={selStyle}
+                aria-label="Ventana de análisis para deserción"
+                title="Cuántos días hacia atrás se consideran clases recientes"
+              >
+                <option value="30">Últimos 30 días</option>
+                <option value="60">Últimos 60 días</option>
+                <option value="90">Últimos 90 días</option>
+                <option value="180">Últimos 180 días</option>
+                <option value="">Sin límite</option>
+              </select>
             )}
             <button onClick={() => exportar("csv")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>CSV</button>
             <button onClick={() => exportar("xlsx")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>Excel</button>
