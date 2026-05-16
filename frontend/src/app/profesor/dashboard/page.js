@@ -32,10 +32,10 @@ export default function DashboardProfesorPage() {
   const noLeidas = notifs.filter(n => !n.leida).length;
 
   const metrics = [
-    { label: "Grupos activos", value: grupos.length },
-    { label: "Estudiantes", value: totalEstudiantes },
-    { label: "Clases registradas", value: totalClases },
-    { label: "Notificaciones", value: noLeidas },
+    { label: "Grupos activos", value: grupos.length, href: "/profesor/grupos" },
+    { label: "Estudiantes", value: totalEstudiantes, href: "/profesor/grupos" },
+    { label: "Clases registradas", value: totalClases, href: "/profesor/asistencia" },
+    { label: "Notificaciones", value: noLeidas, href: "/profesor/notificaciones" },
   ];
 
   return (
@@ -46,13 +46,15 @@ export default function DashboardProfesorPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 26 }}>
         {metrics.map(m => (
-          <div key={m.label} style={{
-            background: C.card, border: `1.5px solid ${C.metricBorder}`, borderRadius: 8,
-            padding: "20px 16px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: C.btn, marginBottom: 6 }}>{m.value}</div>
-            <div style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{m.label}</div>
-          </div>
+          <Link key={m.label} href={m.href} style={{ textDecoration: "none" }}>
+            <div style={{
+              background: C.card, border: `1.5px solid ${C.metricBorder}`, borderRadius: 8,
+              padding: "20px 16px", textAlign: "center", cursor: "pointer",
+            }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.btn, marginBottom: 6 }}>{m.value}</div>
+              <div style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{m.label}</div>
+            </div>
+          </Link>
         ))}
       </div>
 

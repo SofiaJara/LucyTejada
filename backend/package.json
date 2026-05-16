@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
     "migrate": "prisma migrate dev",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "test": "node tests/run-tests.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -19,6 +20,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "supertest": "^7.2.2"
   }
 }

@@ -106,6 +106,9 @@ export default function LoginPage() {
               Regístrate
             </Link>
           </span>
+          <Link href="/login/reset" style={{ fontSize: 12, color: C.muted, textDecoration: "none", marginTop: -6 }}>
+            ¿olvidaste tu contraseña?
+          </Link>
         </div>
       </form>
 

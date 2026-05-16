@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 
 const C = {
@@ -9,7 +10,16 @@ const C = {
   border: "#b8cdc0", card: "#fff", divider: "#d8e8df", progress: "#3A6048",
 };
 
-export default function GruposPage() {
+export default function GruposPageWrapper() {
+  return (
+    <Suspense fallback={<p style={{ color: C.muted }}>Cargando...</p>}>
+      <GruposPage />
+    </Suspense>
+  );
+}
+
+function GruposPage() {
+  const search = useSearchParams();
   const [grupos, setGrupos] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,9 +27,13 @@ export default function GruposPage() {
   useEffect(() => {
     api("/api/grupos").then(gs => {
       setGrupos(gs);
-      if (gs.length > 0) setSelected(gs[0].id);
+      if (gs.length > 0) {
+        const preferred = Number(search.get("grupo"));
+        const found = preferred && gs.find(g => g.id === preferred);
+        setSelected(found ? preferred : gs[0].id);
+      }
     }).finally(() => setLoading(false));
-  }, []);
+  }, [search]);
 
   const grupo = grupos.find(g => g.id === selected);
 
