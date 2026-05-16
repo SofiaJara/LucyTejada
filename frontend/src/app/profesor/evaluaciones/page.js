@@ -42,6 +42,7 @@ function EvaluacionesPage() {
   const [confirm, setConfirm] = useState(false);
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
+  const [evalExistente, setEvalExistente] = useState(null); // {fecha} si ya existe
 
   useEffect(() => {
     api("/api/grupos").then(gs => {
@@ -77,11 +78,13 @@ function EvaluacionesPage() {
           valoracionGeneral: existing.valoracionGeneral,
           comentario: existing.comentario || "",
         });
+        setEvalExistente({ fecha: existing.updatedAt || existing.createdAt });
       } else {
         setEvalu({
           participacion: "Bueno", practica: "Bueno", actitud: "Bueno", progreso: "Bueno",
           valoracionGeneral: "Bueno", comentario: "",
         });
+        setEvalExistente(null);
       }
     });
   }, [grupoId, estudianteId, periodo]);
@@ -111,10 +114,12 @@ function EvaluacionesPage() {
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <ConfirmModal
         open={confirm}
-        title="Confirmar evaluación"
-        message={`¿Guardar la evaluación de ${estudiante?.nombre} ${estudiante?.apellido} para el período ${periodo}?\nValoración general: ${evalu.valoracionGeneral}`}
-        type="confirm"
-        confirmText="Sí, guardar"
+        title={evalExistente ? "Actualizar evaluación" : "Confirmar evaluación"}
+        message={evalExistente
+          ? `Ya existe una evaluación previa de ${estudiante?.nombre} ${estudiante?.apellido} para el período ${periodo}. Al guardar, se actualizarán los valores existentes.\nValoración general: ${evalu.valoracionGeneral}`
+          : `¿Guardar la evaluación de ${estudiante?.nombre} ${estudiante?.apellido} para el período ${periodo}?\nValoración general: ${evalu.valoracionGeneral}`}
+        type={evalExistente ? "warning" : "confirm"}
+        confirmText={evalExistente ? "Sí, actualizar" : "Sí, guardar"}
         onConfirm={guardar}
         onCancel={() => setConfirm(false)}
       />
@@ -152,6 +157,12 @@ function EvaluacionesPage() {
             <span><strong style={{ color: C.head }}>Programa:</strong> {grupo.programa.nombre}</span>
             <span><strong style={{ color: C.head }}>Grupo:</strong> {grupo.nombre}</span>
             <span><strong style={{ color: C.head }}>Período:</strong> {periodo}</span>
+            {evalExistente && (
+              <span style={{
+                color: "#a06b1f", border: `1.5px solid #a06b1f`, borderRadius: 4,
+                padding: "2px 10px", fontSize: 12, fontWeight: 600,
+              }}>Evaluación existente · {new Date(evalExistente.fecha).toLocaleDateString("es-CO")}</span>
+            )}
           </div>
 
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", marginBottom: 18 }}>

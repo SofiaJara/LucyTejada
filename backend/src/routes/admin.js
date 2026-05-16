@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
+import { calcularDesercion } from '../services/desercion.js';
+import { crearBackup, listarBackups, rutaBackup } from '../services/backup.js';
 
 const router = express.Router();
 
@@ -19,6 +21,7 @@ router.get('/dashboard', async (req, res) => {
     prisma.inscripcion.count({ where: { estado: 'lista_espera' } }),
   ]);
   const inscripciones = await prisma.inscripcion.count({ where: { estado: 'activo' } });
+  const enRiesgoDesercion = (await calcularDesercion()).length;
 
   // estudiantes por género
   const generoRaw = await prisma.usuario.groupBy({
@@ -42,6 +45,7 @@ router.get('/dashboard', async (req, res) => {
     evaluacionesRecientes,
     estudiantesInactivos,
     listaEspera,
+    enRiesgoDesercion,
     generos,
     ciudades,
   });
@@ -130,18 +134,32 @@ router.delete('/usuarios/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+function parseRango(desde, hasta) {
+  const r = {};
+  if (desde) r.gte = new Date(desde);
+  if (hasta) {
+    const h = new Date(hasta);
+    h.setHours(23, 59, 59, 999);
+    r.lte = h;
+  }
+  return Object.keys(r).length ? r : null;
+}
+
 router.get('/reportes/asistencia', async (req, res) => {
-  const { programaId, profesorId } = req.query;
+  const { programaId, profesorId, desde, hasta } = req.query;
   const where = { activo: true };
   if (programaId) where.programaId = Number(programaId);
   if (profesorId) where.profesorId = Number(profesorId);
+
+  const rango = parseRango(desde, hasta);
+  const claseFilter = rango ? { where: { fecha: rango }, include: { asistencias: true } } : { include: { asistencias: true } };
 
   const grupos = await prisma.grupo.findMany({
     where,
     include: {
       programa: true,
       profesor: { select: { nombre: true, apellido: true } },
-      clases: { include: { asistencias: true } },
+      clases: claseFilter,
       _count: { select: { inscripciones: true } },
     },
   });
@@ -165,11 +183,18 @@ router.get('/reportes/asistencia', async (req, res) => {
 });
 
 router.get('/reportes/inscripciones', async (req, res) => {
+  const { desde, hasta, programaId } = req.query;
+  const rango = parseRango(desde, hasta);
+  const programaWhere = { activo: true };
+  if (programaId) programaWhere.id = Number(programaId);
+
   const programas = await prisma.programa.findMany({
-    where: { activo: true },
+    where: programaWhere,
     include: {
       grupos: {
-        include: { _count: { select: { inscripciones: true } } },
+        include: {
+          inscripciones: rango ? { where: { fechaInscripcion: rango }, select: { id: true } } : { select: { id: true } },
+        },
       },
     },
   });
@@ -177,13 +202,21 @@ router.get('/reportes/inscripciones', async (req, res) => {
     programa: p.nombre,
     categoria: p.categoria,
     totalGrupos: p.grupos.length,
-    totalInscripciones: p.grupos.reduce((sum, g) => sum + g._count.inscripciones, 0),
+    totalInscripciones: p.grupos.reduce((sum, g) => sum + g.inscripciones.length, 0),
   }));
   res.json(data);
 });
 
 router.get('/reportes/evaluaciones', async (req, res) => {
+  const { desde, hasta, programaId, profesorId } = req.query;
+  const where = {};
+  const rango = parseRango(desde, hasta);
+  if (rango) where.createdAt = rango;
+  if (profesorId) where.profesorId = Number(profesorId);
+  if (programaId) where.grupo = { programaId: Number(programaId) };
+
   const evals = await prisma.evaluacion.findMany({
+    where,
     include: {
       estudiante: { select: { nombre: true, apellido: true, documento: true } },
       profesor:   { select: { nombre: true, apellido: true } },
@@ -293,6 +326,38 @@ router.post('/inscripciones', async (req, res) => {
     },
   });
   res.status(201).json(inscripcion);
+});
+
+// Reporte de deserción (CAR-07 / CAR-08)
+router.get('/reportes/desercion', async (req, res) => {
+  const ventana = req.query.ventana ? Number(req.query.ventana) : undefined;
+  const enRiesgo = await calcularDesercion(ventana ? { diasVentana: ventana } : undefined);
+  res.json(enRiesgo);
+});
+
+// Backups (CAR-12)
+router.get('/backups', (req, res) => {
+  res.json(listarBackups());
+});
+
+router.post('/backups', async (req, res) => {
+  try {
+    const info = crearBackup();
+    await registrar({
+      accion: 'create', entidad: 'backup', entidadId: null,
+      descripcion: `Admin generó backup ${info.archivo} (${info.tamanoBytes} bytes)`,
+      req,
+    });
+    res.status(201).json(info);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/backups/:archivo/descargar', (req, res) => {
+  const ruta = rutaBackup(req.params.archivo);
+  if (!ruta) return res.status(404).json({ error: 'Backup no encontrado' });
+  res.download(ruta);
 });
 
 // Bitácora

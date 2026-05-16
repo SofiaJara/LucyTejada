@@ -7,24 +7,33 @@ const C = {
   btn: "#3A6048", btnT: "#fff",
   head: "#1E2D26", body: "#2c3a32", muted: "#4a5a52",
   border: "#b8cdc0", card: "#fff", divider: "#d8e8df",
+  danger: "#a8442e",
 };
 
 export default function ReportesPage() {
   const [tab, setTab] = useState("asistencia");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t) setTab(t);
+  }, []);
   const [asist, setAsist] = useState([]);
   const [inscr, setInscr] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [evals, setEvals] = useState([]);
   const [demografia, setDemografia] = useState(null);
+  const [desercion, setDesercion] = useState([]);
   const [programas, setProgramas] = useState([]);
   const [profesores, setProfesores] = useState([]);
   const [programaFiltro, setProgramaFiltro] = useState("");
   const [profesorFiltro, setProfesorFiltro] = useState("");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [exportando, setExportando] = useState(false);
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
-    api("/api/admin/reportes/inscripciones").then(setInscr);
     api("/api/admin/usuarios?rol=estudiante").then(setEstudiantes);
-    api("/api/admin/reportes/evaluaciones").then(setEvals);
     api("/api/admin/reportes/demografia").then(setDemografia);
     api("/api/programas", { auth: false }).then(setProgramas);
     api("/api/users/profesores").then(setProfesores);
@@ -34,9 +43,24 @@ export default function ReportesPage() {
     const params = new URLSearchParams();
     if (programaFiltro) params.set("programaId", programaFiltro);
     if (profesorFiltro) params.set("profesorId", profesorFiltro);
+    if (desde) params.set("desde", desde);
+    if (hasta) params.set("hasta", hasta);
     const q = params.toString() ? `?${params.toString()}` : "";
-    api(`/api/admin/reportes/asistencia${q}`).then(setAsist);
-  }, [programaFiltro, profesorFiltro]);
+
+    if (tab === "asistencia") {
+      api(`/api/admin/reportes/asistencia${q}`).then(setAsist);
+    } else if (tab === "inscripciones") {
+      const p = new URLSearchParams();
+      if (programaFiltro) p.set("programaId", programaFiltro);
+      if (desde) p.set("desde", desde);
+      if (hasta) p.set("hasta", hasta);
+      api(`/api/admin/reportes/inscripciones${p.toString() ? `?${p}` : ""}`).then(setInscr);
+    } else if (tab === "evaluaciones") {
+      api(`/api/admin/reportes/evaluaciones${q}`).then(setEvals);
+    } else if (tab === "desercion") {
+      api("/api/admin/reportes/desercion").then(setDesercion);
+    }
+  }, [tab, programaFiltro, profesorFiltro, desde, hasta]);
 
   const demografiaRows = demografia
     ? [
@@ -56,6 +80,17 @@ export default function ReportesPage() {
     })),
     evaluaciones: evals,
     demografia: demografiaRows,
+    desercion: desercion.map(d => ({
+      estudiante: d.estudiante,
+      documento: d.documento,
+      correo: d.correo,
+      programa: d.programa,
+      grupo: d.grupo,
+      clases: d.clasesEvaluadas,
+      asistencias: d.asistencias,
+      porcentaje: `${d.porcentajeAsistencia}%`,
+      ultimaAsistencia: d.ultimaAsistencia || "Nunca",
+    })),
   };
   const titulos = {
     asistencia: "Reporte de Asistencia por Grupo",
@@ -63,14 +98,36 @@ export default function ReportesPage() {
     estudiantes: "Listado de Estudiantes",
     evaluaciones: "Reporte de Evaluaciones",
     demografia: "Demografía estudiantil",
+    desercion: "Estudiantes en riesgo de deserción",
   };
 
-  const exportar = (formato) => {
-    const filename = `${tab}-${new Date().toISOString().split("T")[0]}`;
-    if (formato === "csv") exportCSV(`${filename}.csv`, datos[tab]);
-    if (formato === "xlsx") exportXLS(`${filename}.xls`, datos[tab], titulos[tab]);
-    if (formato === "pdf") exportPDF(titulos[tab], datos[tab]);
+  const exportar = async (formato) => {
+    setExportando(true);
+    setAviso("");
+    try {
+      const filename = `${tab}-${new Date().toISOString().split("T")[0]}`;
+      if (formato === "csv") exportCSV(`${filename}.csv`, datos[tab]);
+      if (formato === "xlsx") exportXLS(`${filename}.xls`, datos[tab], titulos[tab]);
+      if (formato === "pdf") exportPDF(titulos[tab], datos[tab]);
+      setAviso(`Exportado como ${formato.toUpperCase()}.`);
+    } catch (err) {
+      setAviso(`No se pudo exportar: ${err.message}`);
+    } finally {
+      setExportando(false);
+      setTimeout(() => setAviso(""), 2500);
+    }
   };
+
+  const limpiarFiltros = () => {
+    setProgramaFiltro("");
+    setProfesorFiltro("");
+    setDesde("");
+    setHasta("");
+  };
+
+  const filtrosAplicables = ["asistencia", "inscripciones", "evaluaciones"].includes(tab);
+  const mostrarPrograma = ["asistencia", "inscripciones", "evaluaciones"].includes(tab);
+  const mostrarProfesor = ["asistencia", "evaluaciones"].includes(tab);
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
@@ -83,6 +140,7 @@ export default function ReportesPage() {
           { key: "estudiantes", label: "Estudiantes" },
           { key: "evaluaciones", label: "Evaluaciones" },
           { key: "demografia", label: "Demografía" },
+          { key: "desercion", label: "Deserción" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding: "8px 16px", borderRadius: 6,
@@ -100,33 +158,41 @@ export default function ReportesPage() {
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>{titulos[tab]}</h3>
             <span style={{ fontSize: 12, color: C.muted }}>({datos[tab].length} registros)</span>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {tab === "asistencia" && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {filtrosAplicables && (
               <>
-                <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={{
-                  padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
-                  fontSize: 13, color: C.body, background: "#fff",
-                }}>
-                  <option value="">Todos los programas</option>
-                  {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
-                <select value={profesorFiltro} onChange={(e) => setProfesorFiltro(e.target.value)} style={{
-                  padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
-                  fontSize: 13, color: C.body, background: "#fff",
-                }}>
-                  <option value="">Todos los profesores</option>
-                  {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>)}
-                </select>
+                {mostrarPrograma && (
+                  <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={selStyle} aria-label="Filtrar por programa">
+                    <option value="">Todos los programas</option>
+                    {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                )}
+                {mostrarProfesor && (
+                  <select value={profesorFiltro} onChange={(e) => setProfesorFiltro(e.target.value)} style={selStyle} aria-label="Filtrar por profesor">
+                    <option value="">Todos los profesores</option>
+                    {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>)}
+                  </select>
+                )}
+                <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={selStyle} aria-label="Desde" />
+                <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={selStyle} aria-label="Hasta" />
+                {(programaFiltro || profesorFiltro || desde || hasta) && (
+                  <button onClick={limpiarFiltros} style={btnGhost} title="Limpiar filtros">×</button>
+                )}
               </>
             )}
-            <button onClick={() => exportar("csv")} style={btnExp}>CSV</button>
-            <button onClick={() => exportar("xlsx")} style={btnExp}>Excel</button>
-            <button onClick={() => exportar("pdf")} style={btnExp}>PDF</button>
+            <button onClick={() => exportar("csv")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>CSV</button>
+            <button onClick={() => exportar("xlsx")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>Excel</button>
+            <button onClick={() => exportar("pdf")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>PDF</button>
           </div>
         </div>
+        {aviso && (
+          <div style={{ padding: "8px 18px", fontSize: 12, color: C.muted, borderBottom: `1px solid ${C.divider}` }}>{aviso}</div>
+        )}
 
         {datos[tab].length === 0 ? (
-          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>Sin datos.</p>
+          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>
+            {tab === "desercion" ? "No hay estudiantes en riesgo identificados con los criterios actuales." : "Sin datos."}
+          </p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -140,7 +206,7 @@ export default function ReportesPage() {
                   <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
                     {Object.keys(datos[tab][0]).map(h => (
                       <td key={h} style={td}>{
-                        r[h] && typeof r[h] === "string" && r[h].includes("T")
+                        r[h] && typeof r[h] === "string" && r[h].includes("T") && !isNaN(Date.parse(r[h]))
                           ? new Date(r[h]).toLocaleDateString("es-CO")
                           : r[h] ?? "—"
                       }</td>
@@ -159,3 +225,5 @@ export default function ReportesPage() {
 const th = { padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.head, textTransform: "capitalize" };
 const td = { padding: "8px 14px", fontSize: 12, color: C.body };
 const btnExp = { padding: "6px 14px", border: `1.5px solid ${C.btn}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: C.btn, background: "#fff", cursor: "pointer" };
+const btnGhost = { padding: "6px 10px", border: `1.5px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: C.muted, background: "#fff", cursor: "pointer" };
+const selStyle = { padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, color: C.body, background: "#fff" };
