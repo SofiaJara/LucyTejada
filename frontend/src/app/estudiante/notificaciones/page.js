@@ -35,11 +35,13 @@ export default function NotificacionesEstudiantePage() {
 
   const marcarLeida = async (id) => {
     await api(`/api/notificaciones/${id}/leer`, { method: "POST" });
+    window.dispatchEvent(new Event("lt:notifs-changed"));
     cargar();
   };
 
   const marcarTodas = async () => {
     await api("/api/notificaciones/leer-todas", { method: "POST" });
+    window.dispatchEvent(new Event("lt:notifs-changed"));
     cargar();
   };
 

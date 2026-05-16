@@ -1,8 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/app/lib/AuthContext";
+import ConfirmModal from "./ConfirmModal";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -13,7 +12,7 @@ const C = {
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const router = useRouter();
+  const [confirm, setConfirm] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -21,7 +20,12 @@ export default function Navbar() {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    const onRequestLogout = () => { setOpen(false); setConfirm(true); };
+    window.addEventListener("lt:request-logout", onRequestLogout);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("lt:request-logout", onRequestLogout);
+    };
   }, []);
 
   const roleLabel = user?.rol === "admin" ? "Administrador" : user?.rol === "profesor" ? "Profesor" : "Estudiante";
@@ -33,6 +37,16 @@ export default function Navbar() {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "0 24px", zIndex: 100,
     }}>
+      <ConfirmModal
+        open={confirm}
+        title="Cerrar sesión"
+        message="¿Seguro que deseas cerrar tu sesión? Tendrás que volver a iniciar para continuar."
+        type="warning"
+        confirmText="Sí, cerrar sesión"
+        cancelText="Cancelar"
+        onConfirm={() => { setConfirm(false); logout(); }}
+        onCancel={() => setConfirm(false)}
+      />
       <span style={{ fontFamily: "Georgia, serif", fontSize: 17, color: C.head, fontWeight: 700 }}>
         Lucy Tejada
       </span>
@@ -69,11 +83,16 @@ export default function Navbar() {
               </div>
               <div style={{ fontSize: 11, color: C.muted }}>{roleLabel}</div>
             </div>
-            <button onClick={() => { setOpen(false); logout(); }} style={{
-              width: "100%", padding: "10px 16px", textAlign: "left",
-              background: "transparent", border: "none", cursor: "pointer",
-              fontSize: 13, color: C.body, fontFamily: "Segoe UI, sans-serif",
-            }}>Cerrar sesión</button>
+            <button
+              onClick={() => { setOpen(false); setConfirm(true); }}
+              style={{
+                width: "100%", padding: "10px 16px", textAlign: "left",
+                background: "transparent", border: "none", cursor: "pointer",
+                fontSize: 13, color: C.body, fontFamily: "Segoe UI, sans-serif",
+              }}
+            >
+              Cerrar sesión
+            </button>
           </div>
         )}
       </div>

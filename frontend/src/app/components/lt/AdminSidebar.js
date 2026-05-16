@@ -1,25 +1,21 @@
 "use client";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/app/lib/AuthContext";
+import SidebarItem from "./SidebarItem";
 
-const C = {
-  btn: "#3A6048", border: "#b8cdc0", head: "#1E2D26", body: "#2c3a32", muted: "#4a5a52",
-};
+const C = { btn: "#3A6048", border: "#b8cdc0", muted: "#4a5a52" };
 
 const navItems = [
-  { label: "Dashboard",     href: "/admin/dashboard" },
-  { label: "Usuarios",      href: "/admin/usuarios" },
-  { label: "Programas",     href: "/admin/programas" },
-  { label: "Grupos",        href: "/admin/grupos" },
-  { label: "Reportes",      href: "/admin/reportes" },
+  { label: "Dashboard",      href: "/admin/dashboard" },
+  { label: "Usuarios",       href: "/admin/usuarios" },
+  { label: "Programas",      href: "/admin/programas" },
+  { label: "Grupos",         href: "/admin/grupos" },
+  { label: "Reportes",       href: "/admin/reportes" },
   { label: "Notificaciones", href: "/admin/notificaciones" },
-  { label: "Bitácora",      href: "/admin/bitacora" },
+  { label: "Bitácora",       href: "/admin/bitacora" },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
 
   return (
     <aside style={{
@@ -32,21 +28,17 @@ export default function AdminSidebar() {
         {navItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <Link key={item.label} href={item.href} style={{
-              display: "block", padding: "9px 18px",
-              fontFamily: "Segoe UI, sans-serif", fontSize: 13,
-              color: active ? C.btn : C.body,
-              fontWeight: active ? 600 : 500,
-              textDecoration: "none",
-              borderLeft: active ? `3px solid ${C.btn}` : "3px solid transparent",
-              background: active ? "#eef5f0" : "transparent",
-            }}>
-              {item.label}
-            </Link>
+            <SidebarItem
+              key={item.label}
+              href={item.href}
+              label={item.label}
+              active={active}
+              badge={0}
+            />
           );
         })}
       </nav>
-      <button onClick={logout} style={{
+      <button onClick={() => window.dispatchEvent(new Event("lt:request-logout"))} style={{
         margin: "0 14px", padding: "8px 12px", background: "transparent",
         border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12,
         color: C.muted, cursor: "pointer", fontFamily: "Segoe UI, sans-serif",

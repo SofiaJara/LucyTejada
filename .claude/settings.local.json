@@ -27,7 +27,10 @@
       "Bash(findstr node.exe)",
       "Bash(netstat -ano)",
       "Bash(findstr :3001)",
-      "Bash(taskkill /F /PID 24928)"
+      "Bash(taskkill /F /PID 24928)",
+      "Bash(awk 'NF { if \\(length\\($0\\) > 500\\) print NR\": [long line, \"length\\($0\\)\" chars]\"; else print NR\": \"$0 }' \"C:\\\\Users\\\\santi\\\\Desktop\\\\Ingesoft\\\\LucyTejada\\\\project_context\\\\Copia de Entregable 1 Lucy Tejada - completado.docx.md\")",
+      "Bash(npm test *)",
+      "Bash(git commit *)"
     ]
   }
 }
