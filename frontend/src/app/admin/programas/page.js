@@ -21,7 +21,7 @@ export default function AdminProgramasPage() {
   const [loading, setLoading] = useState(false);
 
   const cargar = () => api("/api/programas", { auth: false }).then(setProgramas);
-  useEffect(cargar, []);
+  useEffect(() => { cargar(); }, []);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (p) => { setEditar(p.id); setForm({ ...empty, ...p }); };

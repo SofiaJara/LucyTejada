@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/app/lib/api";
+import { exportCSV, exportXLS, exportPDF } from "@/app/lib/exporters";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -8,43 +9,60 @@ const C = {
   border: "#b8cdc0", card: "#fff", divider: "#d8e8df",
 };
 
-function exportCSV(filename, rows) {
-  if (rows.length === 0) return;
-  const headers = Object.keys(rows[0]);
-  const csv = [
-    headers.join(","),
-    ...rows.map(r => headers.map(h => JSON.stringify(r[h] ?? "")).join(",")),
-  ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export default function ReportesPage() {
   const [tab, setTab] = useState("asistencia");
   const [asist, setAsist] = useState([]);
   const [inscr, setInscr] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
+  const [evals, setEvals] = useState([]);
+  const [programas, setProgramas] = useState([]);
+  const [programaFiltro, setProgramaFiltro] = useState("");
 
   useEffect(() => {
-    api("/api/admin/reportes/asistencia").then(setAsist);
     api("/api/admin/reportes/inscripciones").then(setInscr);
     api("/api/admin/usuarios?rol=estudiante").then(setEstudiantes);
+    api("/api/admin/reportes/evaluaciones").then(setEvals);
+    api("/api/programas", { auth: false }).then(setProgramas);
   }, []);
+
+  useEffect(() => {
+    const q = programaFiltro ? `?programaId=${programaFiltro}` : "";
+    api(`/api/admin/reportes/asistencia${q}`).then(setAsist);
+  }, [programaFiltro]);
+
+  const datos = {
+    asistencia: asist,
+    inscripciones: inscr,
+    estudiantes: estudiantes.map(({ contrasena, inscripciones, ...e }) => ({
+      documento: e.documento, nombre: `${e.nombre} ${e.apellido}`, correo: e.correo,
+      genero: e.genero || "", ciudad: e.ciudad || "", barrio: e.barrio || "",
+    })),
+    evaluaciones: evals,
+  };
+  const titulos = {
+    asistencia: "Reporte de Asistencia por Grupo",
+    inscripciones: "Reporte de Inscripciones por Programa",
+    estudiantes: "Listado de Estudiantes",
+    evaluaciones: "Reporte de Evaluaciones",
+  };
+
+  const exportar = (formato) => {
+    const filename = `${tab}-${new Date().toISOString().split("T")[0]}`;
+    if (formato === "csv") exportCSV(`${filename}.csv`, datos[tab]);
+    if (formato === "xlsx") exportXLS(`${filename}.xls`, datos[tab], titulos[tab]);
+    if (formato === "pdf") exportPDF(titulos[tab], datos[tab]);
+  };
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <h2 style={{ margin: "0 0 18px", fontSize: 22, fontWeight: 700, color: C.head }}>Reportes</h2>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
         {[
-          { key: "asistencia", label: "Asistencia por grupo" },
-          { key: "inscripciones", label: "Inscripciones por programa" },
-          { key: "estudiantes", label: "Demografía de estudiantes" },
+          { key: "asistencia", label: "Asistencia" },
+          { key: "inscripciones", label: "Inscripciones" },
+          { key: "estudiantes", label: "Estudiantes" },
+          { key: "evaluaciones", label: "Evaluaciones" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding: "8px 16px", borderRadius: 6,
@@ -56,94 +74,59 @@ export default function ReportesPage() {
         ))}
       </div>
 
-      {tab === "asistencia" && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>Asistencia por grupo</h3>
-            <button onClick={() => exportCSV("asistencia.csv", asist)} style={btnSecondary}>Exportar CSV</button>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>{titulos[tab]}</h3>
+            <span style={{ fontSize: 12, color: C.muted }}>({datos[tab].length} registros)</span>
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
-                {["Programa", "Grupo", "Clases", "Estudiantes", "Asistencia"].map(h => (
-                  <th key={h} style={th}>{h}</th>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {tab === "asistencia" && (
+              <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={{
+                padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
+                fontSize: 13, color: C.body, background: "#fff",
+              }}>
+                <option value="">Todos los programas</option>
+                {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </select>
+            )}
+            <button onClick={() => exportar("csv")} style={btnExp}>CSV</button>
+            <button onClick={() => exportar("xlsx")} style={btnExp}>Excel</button>
+            <button onClick={() => exportar("pdf")} style={btnExp}>PDF</button>
+          </div>
+        </div>
+
+        {datos[tab].length === 0 ? (
+          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>Sin datos.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
+                  {Object.keys(datos[tab][0]).map(h => <th key={h} style={th}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {datos[tab].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                    {Object.keys(datos[tab][0]).map(h => (
+                      <td key={h} style={td}>{
+                        r[h] && typeof r[h] === "string" && r[h].includes("T")
+                          ? new Date(r[h]).toLocaleDateString("es-CO")
+                          : r[h] ?? "—"
+                      }</td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {asist.map((r, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                  <td style={td}>{r.programa}</td>
-                  <td style={td}>{r.grupo}</td>
-                  <td style={td}>{r.clases}</td>
-                  <td style={td}>{r.estudiantes}</td>
-                  <td style={{ ...td, fontWeight: 700, color: r.asistenciaPorcentaje >= 75 ? C.btn : "#a06b1f" }}>
-                    {r.asistenciaPorcentaje}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "inscripciones" && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>Inscripciones por programa</h3>
-            <button onClick={() => exportCSV("inscripciones.csv", inscr)} style={btnSecondary}>Exportar CSV</button>
+              </tbody>
+            </table>
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
-                {["Programa", "Categoría", "Grupos", "Inscripciones"].map(h => <th key={h} style={th}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {inscr.map((r, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                  <td style={td}>{r.programa}</td>
-                  <td style={{ ...td, color: C.muted }}>{r.categoria}</td>
-                  <td style={td}>{r.totalGrupos}</td>
-                  <td style={{ ...td, fontWeight: 700, color: C.btn }}>{r.totalInscripciones}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "estudiantes" && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>Listado de estudiantes</h3>
-            <button onClick={() => exportCSV("estudiantes.csv", estudiantes.map(({ contrasena, inscripciones, ...e }) => e))} style={btnSecondary}>Exportar CSV</button>
-          </div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
-                {["Documento", "Nombre", "Correo", "Género", "Ciudad", "Barrio"].map(h => <th key={h} style={th}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {estudiantes.map(e => (
-                <tr key={e.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                  <td style={td}>{e.documento}</td>
-                  <td style={{ ...td, fontWeight: 500 }}>{e.nombre} {e.apellido}</td>
-                  <td style={{ ...td, color: C.muted }}>{e.correo}</td>
-                  <td style={td}>{e.genero || "—"}</td>
-                  <td style={td}>{e.ciudad || "—"}</td>
-                  <td style={td}>{e.barrio || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-const th = { padding: "10px 14px", textAlign: "left", fontSize: 13, fontWeight: 700, color: C.head };
-const td = { padding: "9px 14px", fontSize: 13, color: C.body };
-const btnSecondary = { padding: "6px 14px", border: `1.5px solid ${C.btn}`, borderRadius: 6, fontSize: 12, fontWeight: 600, color: C.btn, background: "#fff", cursor: "pointer" };
+const th = { padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.head, textTransform: "capitalize" };
+const td = { padding: "8px 14px", fontSize: 12, color: C.body };
+const btnExp = { padding: "6px 14px", border: `1.5px solid ${C.btn}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: C.btn, background: "#fff", cursor: "pointer" };

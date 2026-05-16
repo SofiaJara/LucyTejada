@@ -14,6 +14,7 @@ const navItems = [
   { label: "Grupos",        href: "/admin/grupos" },
   { label: "Reportes",      href: "/admin/reportes" },
   { label: "Notificaciones", href: "/admin/notificaciones" },
+  { label: "Bitácora",      href: "/admin/bitacora" },
 ];
 
 export default function AdminSidebar() {

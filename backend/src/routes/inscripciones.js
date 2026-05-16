@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -53,6 +54,11 @@ router.post('/', authenticate, async (req, res) => {
     },
   });
 
+  await registrar({
+    accion: 'create', entidad: 'inscripcion', entidadId: inscripcion.id,
+    descripcion: `Inscripción en ${inscripcion.grupo.programa.nombre} · ${inscripcion.grupo.nombre} (${inscripcion.estado})`,
+    req,
+  });
   // crear notificación de confirmación
   await prisma.notificacion.create({
     data: {

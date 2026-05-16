@@ -36,7 +36,7 @@ export default function AdminGruposPage() {
       setProfesores(prof);
     });
   };
-  useEffect(cargar, []);
+  useEffect(() => { cargar(); }, []);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm({ ...empty, programaId: programas[0]?.id || "" }); };
   const abrirEditar = (g) => {

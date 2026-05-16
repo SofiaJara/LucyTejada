@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
@@ -20,7 +20,15 @@ const indicadores = [
   { key: "progreso",      label: "Progreso técnico" },
 ];
 
-export default function EvaluacionesPage() {
+export default function EvaluacionesPageWrapper() {
+  return (
+    <Suspense fallback={<p style={{ color: "#4a5a52" }}>Cargando...</p>}>
+      <EvaluacionesPage />
+    </Suspense>
+  );
+}
+
+function EvaluacionesPage() {
   const search = useSearchParams();
   const [grupos, setGrupos] = useState([]);
   const [grupoId, setGrupoId] = useState("");

@@ -20,7 +20,14 @@
       "Bash(rm -f gen_pages.py)",
       "Bash(python -m json.tool)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} programas'\\)\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(tasklist)",
+      "Bash(findstr node.exe)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3001)",
+      "Bash(taskkill /F /PID 24928)"
     ]
   }
 }

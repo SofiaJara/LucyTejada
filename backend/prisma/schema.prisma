@@ -143,3 +143,18 @@ model Notificacion {
   usuario     Usuario  @relation(fields: [usuarioId], references: [id])
   usuarioId   Int
 }
+
+model Bitacora {
+  id          Int      @id @default(autoincrement())
+  accion      String   // 'login', 'logout', 'create', 'update', 'delete'
+  entidad     String   // 'usuario', 'programa', 'grupo', 'inscripcion', etc.
+  entidadId   Int?
+  descripcion String
+  usuarioId   Int?
+  usuarioCorreo String?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([usuarioId])
+}

@@ -25,7 +25,7 @@ export default function NotificacionesEstudiantePage() {
   const cargar = () => {
     api("/api/notificaciones").then(setNotifs).finally(() => setLoading(false));
   };
-  useEffect(cargar, []);
+  useEffect(() => { cargar(); }, []);
 
   const filtered = useMemo(() => {
     if (active === "todas") return notifs;

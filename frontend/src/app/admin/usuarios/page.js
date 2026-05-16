@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
@@ -17,10 +17,21 @@ const empty = {
   barrio: "", genero: "Masculino", fechaNacimiento: "", activo: true,
 };
 
-export default function AdminUsuariosPage() {
+export default function AdminUsuariosPageWrapper() {
+  return (
+    <Suspense fallback={<p style={{ color: "#4a5a52" }}>Cargando...</p>}>
+      <AdminUsuariosPage />
+    </Suspense>
+  );
+}
+
+function AdminUsuariosPage() {
   const search = useSearchParams();
   const [usuarios, setUsuarios] = useState([]);
   const [rolFiltro, setRolFiltro] = useState(search.get("rol") || "");
+  const [generoFiltro, setGeneroFiltro] = useState("");
+  const [ciudadFiltro, setCiudadFiltro] = useState("");
+  const [barrioFiltro, setBarrioFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
@@ -29,18 +40,16 @@ export default function AdminUsuariosPage() {
   const [loading, setLoading] = useState(false);
 
   const cargar = () => {
-    const q = rolFiltro ? `?rol=${rolFiltro}` : "";
+    const params = new URLSearchParams();
+    if (rolFiltro) params.set("rol", rolFiltro);
+    if (generoFiltro) params.set("genero", generoFiltro);
+    if (ciudadFiltro) params.set("ciudad", ciudadFiltro);
+    if (barrioFiltro) params.set("barrio", barrioFiltro);
+    if (busqueda) params.set("busqueda", busqueda);
+    const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/usuarios${q}`).then(setUsuarios);
   };
-  useEffect(cargar, [rolFiltro]);
-
-  const filtrados = usuarios.filter(u => {
-    if (!busqueda) return true;
-    const s = busqueda.toLowerCase();
-    return (u.nombre + " " + u.apellido).toLowerCase().includes(s)
-      || u.correo.toLowerCase().includes(s)
-      || u.documento.toLowerCase().includes(s);
-  });
+  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, busqueda]);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (u) => {
@@ -90,6 +99,10 @@ export default function AdminUsuariosPage() {
     }
   };
 
+  const limpiarFiltros = () => {
+    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setBusqueda("");
+  };
+
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <ConfirmModal
@@ -119,36 +132,44 @@ export default function AdminUsuariosPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo usuario</button>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-        <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={{
-          flex: 1, padding: "9px 14px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 14, color: C.body, outline: "none",
-        }} />
-        <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={{
-          padding: "9px 14px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 14, color: C.body, background: "#fff",
-        }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
+        <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={input} />
+        <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={input}>
           <option value="">Todos los roles</option>
           <option value="estudiante">Estudiantes</option>
           <option value="profesor">Profesores</option>
           <option value="admin">Administradores</option>
         </select>
+        <select value={generoFiltro} onChange={(e) => setGeneroFiltro(e.target.value)} style={input}>
+          <option value="">Todos los géneros</option>
+          <option>Masculino</option>
+          <option>Femenino</option>
+          <option>Otro</option>
+        </select>
+        <input placeholder="Ciudad" value={ciudadFiltro} onChange={(e) => setCiudadFiltro(e.target.value)} style={input} />
+        <input placeholder="Barrio" value={barrioFiltro} onChange={(e) => setBarrioFiltro(e.target.value)} style={input} />
+        <button onClick={limpiarFiltros} style={{ ...btnGhost, padding: "9px 14px" }}>Limpiar</button>
       </div>
+
+      <p style={{ fontSize: 13, color: C.muted, margin: "0 0 10px" }}>{usuarios.length} usuario(s)</p>
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
-              {["Documento", "Nombre completo", "Correo", "Rol", "Ciudad", "Estado", ""].map(h => (
+              {["Documento", "Nombre completo", "Correo", "Rol", "Género", "Ciudad", "Estado", ""].map(h => (
                 <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 13, fontWeight: 700, color: C.head }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtrados.map(u => (
+            {usuarios.map(u => (
               <tr key={u.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
                 <td style={td}>{u.documento}</td>
                 <td style={{ ...td, fontWeight: 500 }}>{u.nombre} {u.apellido}</td>
                 <td style={{ ...td, color: C.muted }}>{u.correo}</td>
                 <td style={td}><span style={pill(u.rol)}>{u.rol}</span></td>
+                <td style={td}>{u.genero || "—"}</td>
                 <td style={td}>{u.ciudad || "—"}</td>
                 <td style={td}>
                   <span style={{
@@ -165,7 +186,7 @@ export default function AdminUsuariosPage() {
             ))}
           </tbody>
         </table>
-        {filtrados.length === 0 && (
+        {usuarios.length === 0 && (
           <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>Sin usuarios.</p>
         )}
       </div>
@@ -220,17 +241,17 @@ function Input({ label, colSpan = 1, as, options, ...props }) {
     <div style={{ gridColumn: colSpan === 2 ? "1 / 3" : "auto" }}>
       <label style={{ fontSize: 12, color: "#4a5a52", marginBottom: 4, display: "block", fontWeight: 500 }}>{label}</label>
       {as === "select" ? (
-        <select {...props} style={inputStyle}>
+        <select {...props} style={input}>
           {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       ) : (
-        <input {...props} style={inputStyle} />
+        <input {...props} style={input} />
       )}
     </div>
   );
 }
 
-const inputStyle = { width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 14, color: C.body, background: "#fff", outline: "none", boxSizing: "border-box" };
+const input = { width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 14, color: C.body, background: "#fff", outline: "none", boxSizing: "border-box" };
 const td = { padding: "9px 12px", fontSize: 13, color: C.body };
 const btnPrimary = { padding: "8px 18px", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 600, color: "#fff", background: C.btn, cursor: "pointer" };
 const btnGhost = { padding: "8px 18px", border: `1.5px solid ${C.border}`, borderRadius: 6, fontSize: 14, color: C.muted, background: "#fff", cursor: "pointer" };

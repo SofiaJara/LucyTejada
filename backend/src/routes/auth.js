@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -45,6 +46,11 @@ router.post('/register', async (req, res) => {
     );
 
     const { contrasena: _, ...userSafe } = usuario;
+    await registrar({
+      accion: 'create', entidad: 'usuario', entidadId: usuario.id,
+      descripcion: `Registro público de estudiante: ${usuario.correo}`,
+      req: { user: { id: usuario.id, correo: usuario.correo }, headers: req.headers, ip: req.ip, socket: req.socket },
+    });
     res.status(201).json({ token, user: userSafe });
   } catch (err) {
     console.error(err);
@@ -74,6 +80,11 @@ router.post('/login', async (req, res) => {
     );
 
     const { contrasena: _, ...userSafe } = usuario;
+    await registrar({
+      accion: 'login', entidad: 'usuario', entidadId: usuario.id,
+      descripcion: `Inicio de sesión como ${usuario.rol}`,
+      req: { user: { id: usuario.id, correo: usuario.correo }, headers: req.headers, ip: req.ip, socket: req.socket },
+    });
     res.json({ token, user: userSafe });
   } catch (err) {
     console.error(err);

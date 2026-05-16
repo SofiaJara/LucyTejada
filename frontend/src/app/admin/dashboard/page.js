@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/lib/api";
+import BarChart from "@/app/components/lt/BarChart";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -32,6 +33,10 @@ export default function AdminDashboard() {
     { label: "Evaluaciones", value: stats.evaluacionesRecientes, href: "/admin/reportes" },
   ];
 
+  // Top 5 asistencia y top 5 inscripciones
+  const topAsist = [...reporteAsist].sort((a, b) => b.asistenciaPorcentaje - a.asistenciaPorcentaje).slice(0, 6);
+  const topInscr = [...reporteInscr].sort((a, b) => b.totalInscripciones - a.totalInscripciones).slice(0, 6);
+
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.head, margin: "0 0 6px" }}>Panel de administración</h2>
@@ -43,7 +48,6 @@ export default function AdminDashboard() {
             <div style={{
               background: C.card, border: `1.5px solid ${C.metricBorder}`, borderRadius: 8,
               padding: "20px 14px", textAlign: "center", cursor: "pointer",
-              transition: "transform 0.15s",
             }}>
               <div style={{ fontSize: 26, fontWeight: 700, color: C.btn, marginBottom: 4 }}>{m.value}</div>
               <div style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{m.label}</div>
@@ -52,72 +56,30 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "18px 22px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head }}>
-            Inscripciones por programa
-          </h3>
-          {reporteInscr.length === 0 ? (
-            <p style={{ fontSize: 14, color: C.muted }}>Sin datos.</p>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <th style={th}>Programa</th>
-                  <th style={th}>Categoría</th>
-                  <th style={th}>Grupos</th>
-                  <th style={th}>Inscritos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporteInscr.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                    <td style={td}>{r.programa}</td>
-                    <td style={{ ...td, color: C.muted }}>{r.categoria}</td>
-                    <td style={td}>{r.totalGrupos}</td>
-                    <td style={{ ...td, fontWeight: 600 }}>{r.totalInscripciones}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22, marginBottom: 22 }}>
+        <div style={card}>
+          <h3 style={h3}>Inscripciones por programa</h3>
+          <BarChart data={topInscr} labelKey="programa" valueKey="totalInscripciones" />
         </div>
+        <div style={card}>
+          <h3 style={h3}>% Asistencia por grupo</h3>
+          <BarChart data={topAsist.map(r => ({ ...r, label: `${r.programa} · ${r.grupo}` }))} labelKey="label" valueKey="asistenciaPorcentaje" max={100} />
+        </div>
+      </div>
 
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "18px 22px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head }}>
-            Asistencia por grupo
-          </h3>
-          {reporteAsist.length === 0 ? (
-            <p style={{ fontSize: 14, color: C.muted }}>Sin datos.</p>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <th style={th}>Programa · Grupo</th>
-                  <th style={th}>Clases</th>
-                  <th style={th}>Estudiantes</th>
-                  <th style={th}>% Asist.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporteAsist.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                    <td style={td}>{r.programa} · {r.grupo}</td>
-                    <td style={td}>{r.clases}</td>
-                    <td style={td}>{r.estudiantes}</td>
-                    <td style={{ ...td, fontWeight: 600, color: r.asistenciaPorcentaje >= 75 ? C.btn : "#a06b1f" }}>
-                      {r.asistenciaPorcentaje}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
+        <div style={card}>
+          <h3 style={h3}>Estudiantes por género</h3>
+          <BarChart data={stats.generos || []} labelKey="genero" valueKey="count" color="#4a7a5e" />
+        </div>
+        <div style={card}>
+          <h3 style={h3}>Estudiantes por ciudad</h3>
+          <BarChart data={stats.ciudades || []} labelKey="ciudad" valueKey="count" color="#5a8a6e" />
         </div>
       </div>
     </div>
   );
 }
 
-const th = { padding: "8px 10px", textAlign: "left", color: "#1E2D26", fontWeight: 700, fontSize: 12 };
-const td = { padding: "8px 10px", color: "#2c3a32", fontSize: 13 };
+const card = { background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "18px 22px" };
+const h3 = { margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: C.head };

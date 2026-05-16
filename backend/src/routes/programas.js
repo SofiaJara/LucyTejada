@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { registrar } from '../bitacora.js';
 
 const router = express.Router();
 
@@ -48,6 +49,7 @@ router.post('/', authenticate, requireRole('admin'), async (req, res) => {
   const programa = await prisma.programa.create({
     data: { nombre, categoria, descripcion, duracion },
   });
+  await registrar({ accion: 'create', entidad: 'programa', entidadId: programa.id, descripcion: `Creó programa ${nombre}`, req });
   res.status(201).json(programa);
 });
 
@@ -57,14 +59,16 @@ router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
     where: { id: Number(req.params.id) },
     data: { nombre, categoria, descripcion, duracion, activo },
   });
+  await registrar({ accion: 'update', entidad: 'programa', entidadId: programa.id, descripcion: `Actualizó programa ${programa.nombre}`, req });
   res.json(programa);
 });
 
 router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {
-  await prisma.programa.update({
+  const programa = await prisma.programa.update({
     where: { id: Number(req.params.id) },
     data: { activo: false },
   });
+  await registrar({ accion: 'delete', entidad: 'programa', entidadId: programa.id, descripcion: `Desactivó programa ${programa.nombre}`, req });
   res.json({ ok: true });
 });
 
