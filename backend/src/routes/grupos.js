@@ -21,7 +21,14 @@ router.get('/', authenticate, async (req, res) => {
       programa: true,
       profesor: { select: { id: true, nombre: true, apellido: true } },
       inscripciones: {
-        include: { estudiante: { select: { id: true, nombre: true, apellido: true, documento: true } } },
+        include: {
+          estudiante: {
+            select: {
+              id: true, nombre: true, apellido: true, documento: true,
+              ciudad: true, barrio: true, genero: true, correo: true,
+            },
+          },
+        },
       },
       _count: { select: { inscripciones: true, clases: true } },
     },

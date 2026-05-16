@@ -10,11 +10,13 @@ const C = {
 };
 
 const tabs = [
-  { key: "todas",     label: "Todas" },
-  { key: "no_leidas", label: "No leídas" },
-  { key: "horarios",  label: "Horarios" },
-  { key: "academico", label: "Académico" },
-  { key: "eventos",   label: "Eventos" },
+  { key: "todas",          label: "Todas" },
+  { key: "no_leidas",      label: "No leídas" },
+  { key: "horarios",       label: "Horarios" },
+  { key: "academico",      label: "Académico" },
+  { key: "eventos",        label: "Eventos" },
+  { key: "administrativo", label: "Administrativo" },
+  { key: "sistema",        label: "Sistema" },
 ];
 
 export default function NotificacionesEstudiantePage() {

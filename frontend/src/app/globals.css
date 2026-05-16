@@ -49,10 +49,28 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom focus styles */
-input:focus, select:focus, button:focus {
+/* Custom focus styles — match green-cultural palette */
+input:focus, select:focus, textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #3A6048 !important;
+  box-shadow: 0 0 0 3px rgba(58, 96, 72, 0.15);
+}
+button:focus-visible {
+  outline: 2px solid rgba(58, 96, 72, 0.4);
+  outline-offset: 2px;
+}
+button:focus {
+  outline: none;
+}
+a:focus-visible {
+  outline: 2px solid rgba(58, 96, 72, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hover affordance for clickable rows/cards */
+tr:hover td {
+  background: rgba(58, 96, 72, 0.025);
 }
 
 /* Animation for cards */

@@ -74,6 +74,7 @@ export default function BitacoraPage() {
         <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={input} title="Desde" />
         <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={input} title="Hasta" />
         <button onClick={() => exportCSV("bitacora.csv", exportData)} style={btnExp}>CSV</button>
+        <button onClick={() => exportXLS("bitacora.xls", exportData, "Bitácora")} style={btnExp}>Excel</button>
         <button onClick={() => exportPDF("Bitácora de Auditoría", exportData)} style={btnExp}>PDF</button>
       </div>
 

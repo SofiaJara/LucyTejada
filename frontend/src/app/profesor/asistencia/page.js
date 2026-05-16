@@ -72,6 +72,13 @@ export default function AsistenciaPage() {
       [estudianteId]: { ...registros[estudianteId], asistio: !registros[estudianteId].asistio },
     });
   };
+  const marcarTodos = (valor) => {
+    const next = {};
+    Object.entries(registros).forEach(([id, r]) => {
+      next[id] = { ...r, asistio: valor };
+    });
+    setRegistros(next);
+  };
   const setObs = (estudianteId, observacion) => {
     setRegistros({
       ...registros,
@@ -158,6 +165,19 @@ export default function AsistenciaPage() {
 
       {grupo && (
         <>
+          {total > 0 && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: C.muted }}>Acciones rápidas:</span>
+              <button type="button" onClick={() => marcarTodos(true)} style={{
+                padding: "5px 12px", border: `1px solid ${C.btn}`, borderRadius: 5,
+                background: "#fff", color: C.btn, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>Marcar todos presentes</button>
+              <button type="button" onClick={() => marcarTodos(false)} style={{
+                padding: "5px 12px", border: `1px solid ${C.border}`, borderRadius: 5,
+                background: "#fff", color: C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>Limpiar</button>
+            </div>
+          )}
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
