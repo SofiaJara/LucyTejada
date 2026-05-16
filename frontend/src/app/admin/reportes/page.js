@@ -15,20 +15,37 @@ export default function ReportesPage() {
   const [inscr, setInscr] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [evals, setEvals] = useState([]);
+  const [demografia, setDemografia] = useState(null);
   const [programas, setProgramas] = useState([]);
+  const [profesores, setProfesores] = useState([]);
   const [programaFiltro, setProgramaFiltro] = useState("");
+  const [profesorFiltro, setProfesorFiltro] = useState("");
 
   useEffect(() => {
     api("/api/admin/reportes/inscripciones").then(setInscr);
     api("/api/admin/usuarios?rol=estudiante").then(setEstudiantes);
     api("/api/admin/reportes/evaluaciones").then(setEvals);
+    api("/api/admin/reportes/demografia").then(setDemografia);
     api("/api/programas", { auth: false }).then(setProgramas);
+    api("/api/users/profesores").then(setProfesores);
   }, []);
 
   useEffect(() => {
-    const q = programaFiltro ? `?programaId=${programaFiltro}` : "";
+    const params = new URLSearchParams();
+    if (programaFiltro) params.set("programaId", programaFiltro);
+    if (profesorFiltro) params.set("profesorId", profesorFiltro);
+    const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/reportes/asistencia${q}`).then(setAsist);
-  }, [programaFiltro]);
+  }, [programaFiltro, profesorFiltro]);
+
+  const demografiaRows = demografia
+    ? [
+        ...demografia.porGenero.map(d => ({ dimension: "Género", valor: d.valor, total: d.total })),
+        ...demografia.porCiudad.map(d => ({ dimension: "Ciudad", valor: d.valor, total: d.total })),
+        ...demografia.porBarrio.map(d => ({ dimension: "Barrio", valor: d.valor, total: d.total })),
+        ...demografia.porEdad.map(d => ({ dimension: "Edad", valor: d.rango, total: d.total })),
+      ]
+    : [];
 
   const datos = {
     asistencia: asist,
@@ -38,12 +55,14 @@ export default function ReportesPage() {
       genero: e.genero || "", ciudad: e.ciudad || "", barrio: e.barrio || "",
     })),
     evaluaciones: evals,
+    demografia: demografiaRows,
   };
   const titulos = {
     asistencia: "Reporte de Asistencia por Grupo",
     inscripciones: "Reporte de Inscripciones por Programa",
     estudiantes: "Listado de Estudiantes",
     evaluaciones: "Reporte de Evaluaciones",
+    demografia: "Demografía estudiantil",
   };
 
   const exportar = (formato) => {
@@ -63,6 +82,7 @@ export default function ReportesPage() {
           { key: "inscripciones", label: "Inscripciones" },
           { key: "estudiantes", label: "Estudiantes" },
           { key: "evaluaciones", label: "Evaluaciones" },
+          { key: "demografia", label: "Demografía" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding: "8px 16px", borderRadius: 6,
@@ -82,13 +102,22 @@ export default function ReportesPage() {
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {tab === "asistencia" && (
-              <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={{
-                padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
-                fontSize: 13, color: C.body, background: "#fff",
-              }}>
-                <option value="">Todos los programas</option>
-                {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
+              <>
+                <select value={programaFiltro} onChange={(e) => setProgramaFiltro(e.target.value)} style={{
+                  padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
+                  fontSize: 13, color: C.body, background: "#fff",
+                }}>
+                  <option value="">Todos los programas</option>
+                  {programas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+                <select value={profesorFiltro} onChange={(e) => setProfesorFiltro(e.target.value)} style={{
+                  padding: "6px 10px", border: `1px solid ${C.border}`, borderRadius: 6,
+                  fontSize: 13, color: C.body, background: "#fff",
+                }}>
+                  <option value="">Todos los profesores</option>
+                  {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>)}
+                </select>
+              </>
             )}
             <button onClick={() => exportar("csv")} style={btnExp}>CSV</button>
             <button onClick={() => exportar("xlsx")} style={btnExp}>Excel</button>

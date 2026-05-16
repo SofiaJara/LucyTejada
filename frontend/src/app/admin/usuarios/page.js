@@ -28,10 +28,12 @@ export default function AdminUsuariosPageWrapper() {
 function AdminUsuariosPage() {
   const search = useSearchParams();
   const [usuarios, setUsuarios] = useState([]);
+  const [grupos, setGrupos] = useState([]);
   const [rolFiltro, setRolFiltro] = useState(search.get("rol") || "");
   const [generoFiltro, setGeneroFiltro] = useState("");
   const [ciudadFiltro, setCiudadFiltro] = useState("");
   const [barrioFiltro, setBarrioFiltro] = useState("");
+  const [grupoFiltro, setGrupoFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
@@ -39,17 +41,22 @@ function AdminUsuariosPage() {
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    api("/api/grupos").then(setGrupos).catch(() => setGrupos([]));
+  }, []);
+
   const cargar = () => {
     const params = new URLSearchParams();
     if (rolFiltro) params.set("rol", rolFiltro);
     if (generoFiltro) params.set("genero", generoFiltro);
     if (ciudadFiltro) params.set("ciudad", ciudadFiltro);
     if (barrioFiltro) params.set("barrio", barrioFiltro);
+    if (grupoFiltro) params.set("grupoId", grupoFiltro);
     if (busqueda) params.set("busqueda", busqueda);
     const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/usuarios${q}`).then(setUsuarios);
   };
-  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, busqueda]);
+  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, busqueda]);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (u) => {
@@ -100,7 +107,7 @@ function AdminUsuariosPage() {
   };
 
   const limpiarFiltros = () => {
-    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setBusqueda("");
+    setRolFiltro(""); setGeneroFiltro(""); setCiudadFiltro(""); setBarrioFiltro(""); setGrupoFiltro(""); setBusqueda("");
   };
 
   return (
@@ -132,7 +139,7 @@ function AdminUsuariosPage() {
         <button onClick={abrirNuevo} style={btnPrimary}>+ Nuevo usuario</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 18 }}>
         <input placeholder="Buscar por nombre, correo o documento..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={input} />
         <select value={rolFiltro} onChange={(e) => setRolFiltro(e.target.value)} style={input}>
           <option value="">Todos los roles</option>
@@ -145,6 +152,12 @@ function AdminUsuariosPage() {
           <option>Masculino</option>
           <option>Femenino</option>
           <option>Otro</option>
+        </select>
+        <select value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)} style={input} title="Filtrar por grupo">
+          <option value="">Todos los grupos</option>
+          {grupos.map(g => (
+            <option key={g.id} value={g.id}>{g.programa.nombre} · {g.nombre}</option>
+          ))}
         </select>
         <input placeholder="Ciudad" value={ciudadFiltro} onChange={(e) => setCiudadFiltro(e.target.value)} style={input} />
         <input placeholder="Barrio" value={barrioFiltro} onChange={(e) => setBarrioFiltro(e.target.value)} style={input} />

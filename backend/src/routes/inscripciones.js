@@ -26,7 +26,7 @@ router.post('/', authenticate, async (req, res) => {
 
   const grupo = await prisma.grupo.findUnique({
     where: { id: Number(grupoId) },
-    include: { _count: { select: { inscripciones: true } } },
+    include: { _count: { select: { inscripciones: true } }, programa: true },
   });
   if (!grupo) return res.status(404).json({ error: 'Grupo no encontrado' });
   if (!grupo.activo) return res.status(400).json({ error: 'Grupo inactivo' });
@@ -37,6 +37,19 @@ router.post('/', authenticate, async (req, res) => {
     where: { estudianteId_grupoId: { estudianteId: req.user.id, grupoId: Number(grupoId) } },
   });
   if (existing) return res.status(400).json({ error: 'Ya estás inscrito en este grupo' });
+
+  const enMismoPrograma = await prisma.inscripcion.findFirst({
+    where: {
+      estudianteId: req.user.id,
+      grupo: { programaId: grupo.programaId },
+    },
+    include: { grupo: true },
+  });
+  if (enMismoPrograma) {
+    return res.status(400).json({
+      error: `Ya estás inscrito en otro grupo de "${grupo.programa.nombre}" (${enMismoPrograma.grupo.nombre}). Cancela esa inscripción primero.`,
+    });
+  }
 
   const inscripcion = await prisma.inscripcion.create({
     data: {

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
@@ -13,11 +13,15 @@ const C = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false, title: "", message: "", type: "error" });
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectByRol(user.rol));
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

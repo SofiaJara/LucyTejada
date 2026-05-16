@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
@@ -21,8 +21,12 @@ const labelStyle = { fontSize: 13, color: C.label, marginBottom: 4, display: "bl
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { user, loading: authLoading, register } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectByRol(user.rol));
+  }, [authLoading, user, router]);
   const [confirm, setConfirm] = useState(false);
   const [modal, setModal] = useState({ open: false, title: "", message: "", type: "info" });
   const [data, setData] = useState({

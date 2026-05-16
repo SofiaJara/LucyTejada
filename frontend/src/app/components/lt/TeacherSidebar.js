@@ -11,6 +11,7 @@ const navItems = [
   { label: "Asistencia",      href: "/profesor/asistencia" },
   { label: "Evaluaciones",    href: "/profesor/evaluaciones" },
   { label: "Notificaciones",  href: "/profesor/notificaciones", showBadge: true },
+  { label: "Avisar grupo",    href: "/profesor/avisar" },
   { label: "Mi perfil",       href: "/profesor/perfil" },
 ];
 

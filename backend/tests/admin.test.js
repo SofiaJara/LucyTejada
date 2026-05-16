@@ -89,6 +89,71 @@ describe('admin', () => {
     assert.ok(Array.isArray(r3.body));
   });
 
+  test('GET /api/admin/reportes/asistencia filtra por profesor (CAR-04)', async () => {
+    const { admin, profesor, programa } = await seedBasic();
+    const otroProf = await makeUser({ documento: 'P-OTRO', correo: 'otroprof@x.com', rol: 'profesor' });
+    await prisma.grupo.create({
+      data: { nombre: 'Grupo X', cupoMaximo: 5, totalClases: 5,
+              horario: 'X', salon: 'Y', programaId: programa.id, profesorId: otroProf.id },
+    });
+    const t = await login(admin.correo, 'password123');
+    const rTodos = await request(app).get('/api/admin/reportes/asistencia').set('Authorization', `Bearer ${t}`);
+    assert.ok(rTodos.body.length >= 2);
+    const rProf = await request(app).get(`/api/admin/reportes/asistencia?profesorId=${profesor.id}`).set('Authorization', `Bearer ${t}`);
+    assert.ok(rProf.body.every(g => g.profesor.includes(profesor.nombre)));
+  });
+
+  test('GET /api/admin/reportes/demografia agrupa por género/ciudad/barrio/edad (CAR-08)', async () => {
+    const { admin } = await seedBasic();
+    await makeUser({ documento: 'D-1', correo: 'd1@x.com', rol: 'estudiante', genero: 'Femenino', ciudad: 'Cali', barrio: 'A' });
+    await makeUser({ documento: 'D-2', correo: 'd2@x.com', rol: 'estudiante', genero: 'Femenino', ciudad: 'Cali', barrio: 'B' });
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).get('/api/admin/reportes/demografia').set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.totalEstudiantes, 3);
+    assert.ok(res.body.porGenero.some(g => g.valor === 'Femenino' && g.total === 2));
+    assert.ok(res.body.porCiudad.some(c => c.valor === 'Cali' && c.total === 2));
+    assert.ok(Array.isArray(res.body.porEdad));
+  });
+
+  test('GET /api/admin/usuarios filtra por grupoId (CAR-10)', async () => {
+    const { admin, estudiante, grupo } = await seedBasic();
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    const otroEst = await makeUser({ documento: 'O-1', correo: 'o1@x.com', rol: 'estudiante' });
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).get(`/api/admin/usuarios?grupoId=${grupo.id}`).set('Authorization', `Bearer ${t}`);
+    assert.equal(res.body.length, 1);
+    assert.equal(res.body[0].id, estudiante.id);
+  });
+
+  test('POST /api/admin/inscripciones permite al admin inscribir manualmente', async () => {
+    const { admin, estudiante, grupo } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).post('/api/admin/inscripciones')
+      .set('Authorization', `Bearer ${t}`)
+      .send({ estudianteId: estudiante.id, grupoId: grupo.id });
+    assert.equal(res.status, 201);
+    const ins = await prisma.inscripcion.findFirst({ where: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    assert.ok(ins);
+    const notif = await prisma.notificacion.findFirst({ where: { usuarioId: estudiante.id, categoria: 'academico' } });
+    assert.ok(notif, 'debe notificar al estudiante');
+  });
+
+  test('POST /api/admin/inscripciones bloquea grupos paralelos del mismo programa', async () => {
+    const { admin, estudiante, profesor, programa, grupo } = await seedBasic();
+    const grupoB = await prisma.grupo.create({
+      data: { nombre: 'Grupo B', cupoMaximo: 5, totalClases: 5,
+              horario: 'X', salon: 'Y', programaId: programa.id, profesorId: profesor.id },
+    });
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id } });
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).post('/api/admin/inscripciones')
+      .set('Authorization', `Bearer ${t}`)
+      .send({ estudianteId: estudiante.id, grupoId: grupoB.id });
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /otro grupo/i);
+  });
+
   test('GET /api/admin/bitacora filtra por acción/entidad/fecha', async () => {
     const { admin } = await seedBasic();
     const t = await login(admin.correo, 'password123');

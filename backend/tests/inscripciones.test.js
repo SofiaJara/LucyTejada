@@ -103,4 +103,21 @@ describe('inscripciones', () => {
       .set('Authorization', `Bearer ${t}`).send({ grupoId: grupo.id });
     assert.equal(res.status, 400);
   });
+
+  test('no permite inscribirse en otro grupo del mismo programa (CAR-02)', async () => {
+    const { estudiante, profesor, programa, grupo } = await seedBasic();
+    const grupoB = await prisma.grupo.create({
+      data: { nombre: 'Grupo B', cupoMaximo: 5, totalClases: 10,
+              horario: 'Mar 8am', salon: 'Salón 2',
+              programaId: programa.id, profesorId: profesor.id },
+    });
+    const t = await login(estudiante.correo, 'password123');
+    const r1 = await request(app).post('/api/inscripciones')
+      .set('Authorization', `Bearer ${t}`).send({ grupoId: grupo.id });
+    assert.equal(r1.status, 201);
+    const r2 = await request(app).post('/api/inscripciones')
+      .set('Authorization', `Bearer ${t}`).send({ grupoId: grupoB.id });
+    assert.equal(r2.status, 400);
+    assert.match(r2.body.error, /otro grupo/i);
+  });
 });

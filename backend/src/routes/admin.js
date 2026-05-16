@@ -48,12 +48,14 @@ router.get('/dashboard', async (req, res) => {
 });
 
 router.get('/usuarios', async (req, res) => {
-  const { rol, genero, ciudad, barrio, busqueda } = req.query;
+  const { rol, genero, ciudad, barrio, busqueda, grupoId, programaId } = req.query;
   const where = {};
   if (rol) where.rol = rol;
   if (genero) where.genero = genero;
   if (ciudad) where.ciudad = { contains: ciudad };
   if (barrio) where.barrio = { contains: barrio };
+  if (grupoId) where.inscripciones = { some: { grupoId: Number(grupoId) } };
+  else if (programaId) where.inscripciones = { some: { grupo: { programaId: Number(programaId) } } };
   if (busqueda) {
     where.OR = [
       { nombre: { contains: busqueda } },
@@ -127,9 +129,10 @@ router.delete('/usuarios/:id', async (req, res) => {
 });
 
 router.get('/reportes/asistencia', async (req, res) => {
-  const { programaId } = req.query;
+  const { programaId, profesorId } = req.query;
   const where = { activo: true };
   if (programaId) where.programaId = Number(programaId);
+  if (profesorId) where.profesorId = Number(profesorId);
 
   const grupos = await prisma.grupo.findMany({
     where,
@@ -201,6 +204,93 @@ router.get('/reportes/evaluaciones', async (req, res) => {
     comentario: e.comentario || '',
     fecha: e.createdAt,
   })));
+});
+
+router.get('/reportes/demografia', async (req, res) => {
+  const estudiantes = await prisma.usuario.findMany({
+    where: { rol: 'estudiante', activo: true },
+    select: { genero: true, ciudad: true, barrio: true, fechaNacimiento: true },
+  });
+  const bucket = (arr, key) => {
+    const map = new Map();
+    arr.forEach(e => {
+      const v = e[key] || 'Sin dato';
+      map.set(v, (map.get(v) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([valor, total]) => ({ valor, total }));
+  };
+  const edadBucket = () => {
+    const ahora = Date.now();
+    const rangos = { 'Menor de 12': 0, '12-17': 0, '18-25': 0, '26-40': 0, 'Más de 40': 0, 'Sin dato': 0 };
+    estudiantes.forEach(e => {
+      if (!e.fechaNacimiento) { rangos['Sin dato']++; return; }
+      const edad = Math.floor((ahora - new Date(e.fechaNacimiento).getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (edad < 12) rangos['Menor de 12']++;
+      else if (edad < 18) rangos['12-17']++;
+      else if (edad < 26) rangos['18-25']++;
+      else if (edad < 41) rangos['26-40']++;
+      else rangos['Más de 40']++;
+    });
+    return Object.entries(rangos).map(([rango, total]) => ({ rango, total }));
+  };
+  res.json({
+    totalEstudiantes: estudiantes.length,
+    porGenero: bucket(estudiantes, 'genero'),
+    porCiudad: bucket(estudiantes, 'ciudad').sort((a, b) => b.total - a.total),
+    porBarrio: bucket(estudiantes, 'barrio').sort((a, b) => b.total - a.total),
+    porEdad: edadBucket(),
+  });
+});
+
+// Inscribir un estudiante manualmente desde admin
+router.post('/inscripciones', async (req, res) => {
+  const { estudianteId, grupoId } = req.body;
+  if (!estudianteId || !grupoId) return res.status(400).json({ error: 'estudianteId y grupoId requeridos' });
+
+  const grupo = await prisma.grupo.findUnique({
+    where: { id: Number(grupoId) },
+    include: { _count: { select: { inscripciones: true } }, programa: true },
+  });
+  if (!grupo) return res.status(404).json({ error: 'Grupo no encontrado' });
+  if (!grupo.activo) return res.status(400).json({ error: 'Grupo inactivo' });
+
+  const existing = await prisma.inscripcion.findUnique({
+    where: { estudianteId_grupoId: { estudianteId: Number(estudianteId), grupoId: Number(grupoId) } },
+  });
+  if (existing) return res.status(400).json({ error: 'El estudiante ya está inscrito en este grupo' });
+
+  const enMismoPrograma = await prisma.inscripcion.findFirst({
+    where: { estudianteId: Number(estudianteId), grupo: { programaId: grupo.programaId } },
+    include: { grupo: true },
+  });
+  if (enMismoPrograma) {
+    return res.status(400).json({
+      error: `El estudiante ya está inscrito en otro grupo de "${grupo.programa.nombre}" (${enMismoPrograma.grupo.nombre}).`,
+    });
+  }
+
+  const cuposLibres = grupo.cupoMaximo - grupo._count.inscripciones;
+  const inscripcion = await prisma.inscripcion.create({
+    data: {
+      estudianteId: Number(estudianteId),
+      grupoId: Number(grupoId),
+      estado: cuposLibres > 0 ? 'activo' : 'lista_espera',
+    },
+  });
+  await registrar({
+    accion: 'create', entidad: 'inscripcion', entidadId: inscripcion.id,
+    descripcion: `Admin inscribió a estudiante #${estudianteId} en ${grupo.programa.nombre} · ${grupo.nombre} (${inscripcion.estado})`,
+    req,
+  });
+  await prisma.notificacion.create({
+    data: {
+      usuarioId: Number(estudianteId),
+      titulo: `Inscripción ${cuposLibres > 0 ? 'confirmada' : 'en lista de espera'} · ${grupo.programa.nombre}`,
+      mensaje: `Has sido inscrito en ${grupo.programa.nombre} · ${grupo.nombre} por el administrador.`,
+      categoria: 'academico',
+    },
+  });
+  res.status(201).json(inscripcion);
 });
 
 // Bitácora
