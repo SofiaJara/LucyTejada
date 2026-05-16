@@ -10,6 +10,7 @@ const navItems = [
   { label: "Mis clases",      href: "/estudiante/clases" },
   { label: "Inscripción",     href: "/estudiante/inscripcion" },
   { label: "Notificaciones",  href: "/estudiante/notificaciones", showBadge: true },
+  { label: "Mi perfil",       href: "/estudiante/perfil" },
 ];
 
 export default function StudentSidebar() {

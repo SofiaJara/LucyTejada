@@ -75,12 +75,31 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 router.delete('/:id', authenticate, async (req, res) => {
-  const inscripcion = await prisma.inscripcion.findUnique({ where: { id: Number(req.params.id) } });
+  const inscripcion = await prisma.inscripcion.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { grupo: { include: { programa: true } } },
+  });
   if (!inscripcion) return res.status(404).json({ error: 'Inscripción no encontrada' });
   if (inscripcion.estudianteId !== req.user.id && req.user.rol !== 'admin') {
     return res.status(403).json({ error: 'No autorizado' });
   }
   await prisma.inscripcion.delete({ where: { id: Number(req.params.id) } });
+
+  await registrar({
+    accion: 'delete', entidad: 'inscripcion', entidadId: inscripcion.id,
+    descripcion: `Cancelación de inscripción en ${inscripcion.grupo.programa.nombre} · ${inscripcion.grupo.nombre}`,
+    req,
+  });
+
+  await prisma.notificacion.create({
+    data: {
+      usuarioId: inscripcion.estudianteId,
+      titulo: `Inscripción cancelada · ${inscripcion.grupo.programa.nombre}`,
+      mensaje: `Tu inscripción en ${inscripcion.grupo.programa.nombre} · ${inscripcion.grupo.nombre} fue cancelada.`,
+      categoria: 'academico',
+    },
+  });
+
   res.json({ ok: true });
 });
 

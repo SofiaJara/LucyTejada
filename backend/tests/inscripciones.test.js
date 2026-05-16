@@ -70,6 +70,31 @@ describe('inscripciones', () => {
     assert.equal(res.status, 403);
   });
 
+  test('DELETE /api/inscripciones/:id por el dueño cancela y notifica', async () => {
+    const { estudiante, grupo } = await seedBasic();
+    const t = await login(estudiante.correo, 'password123');
+    const ins = await prisma.inscripcion.create({
+      data: { estudianteId: estudiante.id, grupoId: grupo.id },
+    });
+    const res = await request(app).delete(`/api/inscripciones/${ins.id}`)
+      .set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+
+    const existe = await prisma.inscripcion.findUnique({ where: { id: ins.id } });
+    assert.equal(existe, null);
+
+    const notif = await prisma.notificacion.findFirst({
+      where: { usuarioId: estudiante.id, titulo: { contains: 'cancelada' } },
+    });
+    assert.ok(notif, 'debe crear notificación de cancelación');
+
+    const log = await prisma.bitacora.findFirst({
+      where: { accion: 'delete', entidad: 'inscripcion' },
+    });
+    assert.ok(log, 'debe registrar bitácora');
+  });
+
   test('grupo inactivo no acepta inscripción', async () => {
     const { estudiante, grupo } = await seedBasic();
     await prisma.grupo.update({ where: { id: grupo.id }, data: { activo: false } });

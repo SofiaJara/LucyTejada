@@ -12,6 +12,7 @@ const navItems = [
   { label: "Reportes",       href: "/admin/reportes" },
   { label: "Notificaciones", href: "/admin/notificaciones" },
   { label: "Bitácora",       href: "/admin/bitacora" },
+  { label: "Mi perfil",      href: "/admin/perfil" },
 ];
 
 export default function AdminSidebar() {

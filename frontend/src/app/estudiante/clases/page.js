@@ -14,19 +14,31 @@ export default function ClasesPage() {
   const { user } = useAuth();
   const [inscripciones, setInscripciones] = useState([]);
   const [clases, setClases] = useState([]);
+  const [resumen, setResumen] = useState({ presentes: 0, total: 0, porcentaje: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    api("/api/inscripciones/mias")
-      .then(async (data) => {
+    Promise.all([
+      api("/api/inscripciones/mias"),
+      api(`/api/asistencia/estudiante/${user.id}/resumen`).catch(() => ({ presentes: 0, total: 0, porcentaje: 0 })),
+    ])
+      .then(async ([data, res]) => {
         setInscripciones(data);
+        setResumen(res);
         if (data.length > 0) {
-          // traer clases por cada grupo
           const allClases = [];
           for (const ins of data) {
             const cs = await api(`/api/asistencia/grupos/${ins.grupoId}/clases`);
-            cs.forEach(c => allClases.push({ ...c, grupo: ins.grupo }));
+            cs.forEach(c => {
+              const propia = c.asistencias?.find(a => a.estudianteId === user.id);
+              allClases.push({
+                ...c,
+                grupo: ins.grupo,
+                miAsistencia: propia ? (propia.asistio ? "presente" : "ausente") : "pendiente",
+                observacion: propia?.observacion || "",
+              });
+            });
           }
           setClases(allClases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
         }
@@ -79,6 +91,22 @@ export default function ClasesPage() {
             ))}
           </div>
 
+          <div style={{
+            background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+            padding: "14px 20px", marginBottom: 18,
+            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10,
+          }}>
+            <div>
+              <div style={{ fontSize: 13, color: C.muted }}>Mi asistencia global</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.head }}>
+                {resumen.presentes} de {resumen.total} clases · <span style={{ color: C.btn }}>{resumen.porcentaje}%</span>
+              </div>
+            </div>
+            <div style={{ width: 240, height: 10, background: "#e0ece6", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ width: `${resumen.porcentaje}%`, height: "100%", background: C.btn, borderRadius: 6 }} />
+            </div>
+          </div>
+
           <h3 style={{ fontSize: 16, fontWeight: 700, color: C.head, margin: "0 0 12px" }}>Sesiones registradas</h3>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
             {clases.length === 0 ? (
@@ -89,7 +117,7 @@ export default function ClasesPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ borderBottom: `1.5px solid ${C.border}` }}>
-                    {["Fecha", "Programa · Grupo", "Tema"].map(h => (
+                    {["Fecha", "Programa · Grupo", "Tema", "Mi asistencia", "Observación"].map(h => (
                       <th key={h} style={{
                         padding: "10px 14px", textAlign: "left", fontSize: 13,
                         fontWeight: 700, color: C.head,
@@ -98,19 +126,35 @@ export default function ClasesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {clases.map(c => (
-                    <tr key={c.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                      <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>
-                        {new Date(c.fecha).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
-                      </td>
-                      <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>
-                        {c.grupo.programa.nombre} · {c.grupo.nombre}
-                      </td>
-                      <td style={{ padding: "9px 14px", fontSize: 13, color: C.muted }}>
-                        {c.tema || "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {clases.map(c => {
+                    const pillStyle = {
+                      presente: { bg: "#eef5f0", fg: C.btn, label: "Presente" },
+                      ausente:  { bg: "#fdf1ec", fg: "#a8442e", label: "Ausente" },
+                      pendiente:{ bg: "#fdf5e8", fg: "#a06b1f", label: "Sin registrar" },
+                    }[c.miAsistencia];
+                    return (
+                      <tr key={c.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body, whiteSpace: "nowrap" }}>
+                          {new Date(c.fecha).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+                        </td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.body }}>
+                          {c.grupo.programa.nombre} · {c.grupo.nombre}
+                        </td>
+                        <td style={{ padding: "9px 14px", fontSize: 13, color: C.muted }}>
+                          {c.tema || "—"}
+                        </td>
+                        <td style={{ padding: "9px 14px" }}>
+                          <span style={{
+                            fontSize: 11, padding: "3px 10px", borderRadius: 4, fontWeight: 700,
+                            background: pillStyle.bg, color: pillStyle.fg, textTransform: "uppercase",
+                          }}>{pillStyle.label}</span>
+                        </td>
+                        <td style={{ padding: "9px 14px", fontSize: 12, color: C.muted }}>
+                          {c.observacion || "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

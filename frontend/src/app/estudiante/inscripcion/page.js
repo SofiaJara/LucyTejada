@@ -26,6 +26,7 @@ export default function InscripcionPage() {
   const [categoria, setCategoria] = useState("");
   const [loading, setLoading] = useState(true);
   const [seleccion, setSeleccion] = useState(null); // {programa, grupo}
+  const [cancelar, setCancelar] = useState(null); // {programa, grupo, inscripcionId}
   const [modal, setModal] = useState({ open: false, title: "", message: "", type: "info" });
 
   const cargar = () => {
@@ -49,7 +50,25 @@ export default function InscripcionPage() {
     return true;
   });
 
-  const yaInscritoGrupo = (grupoId) => misInscripciones.some(i => i.grupoId === grupoId);
+  const inscripcionDeGrupo = (grupoId) => misInscripciones.find(i => i.grupoId === grupoId);
+
+  const confirmarCancelar = async () => {
+    if (!cancelar) return;
+    try {
+      await api(`/api/inscripciones/${cancelar.inscripcionId}`, { method: "DELETE" });
+      setCancelar(null);
+      setModal({
+        open: true,
+        title: "Inscripción cancelada",
+        message: `Tu inscripción en ${cancelar.programa.nombre} · ${cancelar.grupo.nombre} fue cancelada.`,
+        type: "success",
+      });
+      cargar();
+    } catch (err) {
+      setCancelar(null);
+      setModal({ open: true, title: "No se pudo cancelar", message: err.message, type: "error" });
+    }
+  };
 
   const confirmar = async () => {
     if (!seleccion) return;
@@ -82,6 +101,18 @@ export default function InscripcionPage() {
         cancelText="Cancelar"
         onConfirm={confirmar}
         onCancel={() => setSeleccion(null)}
+      />
+      <ConfirmModal
+        open={!!cancelar}
+        title="Cancelar inscripción"
+        message={cancelar
+          ? `¿Cancelar tu inscripción en "${cancelar.programa.nombre}" · ${cancelar.grupo.nombre}? Podrás volver a inscribirte si hay cupos.`
+          : ""}
+        type="warning"
+        confirmText="Sí, cancelar"
+        cancelText="Volver"
+        onConfirm={confirmarCancelar}
+        onCancel={() => setCancelar(null)}
       />
       <ConfirmModal
         {...modal}
@@ -138,14 +169,15 @@ export default function InscripcionPage() {
               </div>
             ) : p.grupos.map(g => {
               const cupos = g.cupoMaximo - g._count.inscripciones;
-              const ocupado = yaInscritoGrupo(g.id);
+              const inscripcion = inscripcionDeGrupo(g.id);
+              const ocupado = !!inscripcion;
               const sinCupos = cupos <= 0;
               return (
                 <div key={g.id} style={{
-                  background: !sinCupos ? C.bgCard : C.bgCardOff,
-                  border: `1.5px solid ${!sinCupos ? C.border : C.borderOff}`,
+                  background: (!sinCupos || ocupado) ? C.bgCard : C.bgCardOff,
+                  border: `1.5px solid ${ocupado ? C.btnBg : (!sinCupos ? C.border : C.borderOff)}`,
                   borderRadius: 8, padding: "18px 20px",
-                  opacity: sinCupos ? 0.75 : 1,
+                  opacity: (sinCupos && !ocupado) ? 0.75 : 1,
                 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: C.headingText, marginBottom: 5 }}>{p.nombre}</div>
                   <div style={{ fontSize: 13, color: C.labelText, marginBottom: 10, fontWeight: 600 }}>
@@ -165,19 +197,37 @@ export default function InscripcionPage() {
                     <span style={{ color: C.mutedText }}>Cupos: </span>
                     {cupos > 0 ? `${cupos} disponibles` : "Sin cupos disponibles"}
                   </div>
-                  <button
-                    disabled={ocupado}
-                    onClick={() => setSeleccion({ programa: p, grupo: g })}
-                    style={{
-                      padding: "7px 18px", border: "none", borderRadius: 6,
-                      fontSize: 14, fontWeight: 600,
-                      color: C.btnText,
-                      background: ocupado ? C.btnOffBg : (sinCupos ? "#8a9e90" : C.btnBg),
-                      cursor: ocupado ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {ocupado ? "Ya inscrito" : (sinCupos ? "Lista de espera" : "Inscribirse")}
-                  </button>
+                  {ocupado ? (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{
+                        fontSize: 11, padding: "5px 12px", borderRadius: 4, fontWeight: 700,
+                        color: C.btnBg, background: "#eef5f0", textTransform: "uppercase",
+                      }}>
+                        {inscripcion.estado === "lista_espera" ? "En lista de espera" : "Inscrito"}
+                      </span>
+                      <button
+                        onClick={() => setCancelar({ programa: p, grupo: g, inscripcionId: inscripcion.id })}
+                        style={{
+                          padding: "6px 14px", border: `1.5px solid #a8442e`, borderRadius: 6,
+                          fontSize: 13, fontWeight: 600, color: "#a8442e", background: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >Cancelar inscripción</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSeleccion({ programa: p, grupo: g })}
+                      style={{
+                        padding: "7px 18px", border: "none", borderRadius: 6,
+                        fontSize: 14, fontWeight: 600,
+                        color: C.btnText,
+                        background: sinCupos ? "#8a9e90" : C.btnBg,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {sinCupos ? "Lista de espera" : "Inscribirse"}
+                    </button>
+                  )}
                 </div>
               );
             })
