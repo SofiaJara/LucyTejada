@@ -71,4 +71,23 @@ describe('grupos', () => {
     });
     assert.ok(notif);
   });
+
+  test('GET /api/grupos?incluirInactivos=true sólo aplica para admins', async () => {
+    const { admin, profesor, grupo } = await seedBasic();
+    await prisma.grupo.update({ where: { id: grupo.id }, data: { activo: false } });
+
+    const tAdmin = await login(admin.correo, 'password123');
+    const adminAll = await request(app).get('/api/grupos?incluirInactivos=true').set('Authorization', `Bearer ${tAdmin}`);
+    assert.equal(adminAll.status, 200);
+    assert.equal(adminAll.body.length, 1);
+    assert.equal(adminAll.body[0].activo, false);
+
+    const adminActivos = await request(app).get('/api/grupos').set('Authorization', `Bearer ${tAdmin}`);
+    assert.equal(adminActivos.body.length, 0);
+
+    // El profesor no debería ver inactivos aunque pase el flag
+    const tProf = await login(profesor.correo, 'password123');
+    const profAll = await request(app).get('/api/grupos?incluirInactivos=true').set('Authorization', `Bearer ${tProf}`);
+    assert.equal(profAll.body.length, 0);
+  });
 });

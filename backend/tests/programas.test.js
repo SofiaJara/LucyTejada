@@ -82,4 +82,28 @@ describe('programas (CRUD)', () => {
     const res = await request(app).get('/api/programas/99999');
     assert.equal(res.status, 404);
   });
+
+  test('GET /api/programas?incluirInactivos=true muestra inactivos para gestión admin', async () => {
+    const { admin, programa } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    await request(app).delete(`/api/programas/${programa.id}`).set('Authorization', `Bearer ${t}`);
+    const publico = await request(app).get('/api/programas');
+    assert.equal(publico.body.length, 0, 'estudiantes/público no ven inactivos');
+    const completo = await request(app).get('/api/programas?incluirInactivos=true');
+    assert.equal(completo.body.length, 1);
+    assert.equal(completo.body[0].activo, false);
+  });
+
+  test('PUT /api/programas/:id puede reactivar un programa desactivado', async () => {
+    const { admin, programa } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    await request(app).delete(`/api/programas/${programa.id}`).set('Authorization', `Bearer ${t}`);
+    const res = await request(app).put(`/api/programas/${programa.id}`)
+      .set('Authorization', `Bearer ${t}`)
+      .send({ nombre: programa.nombre, categoria: programa.categoria, activo: true });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.activo, true);
+    const publico = await request(app).get('/api/programas');
+    assert.equal(publico.body.length, 1);
+  });
 });

@@ -27,7 +27,7 @@ export default function AdminGruposPage() {
 
   const cargar = () => {
     Promise.all([
-      api("/api/grupos"),
+      api("/api/grupos?incluirInactivos=true"),
       api("/api/programas", { auth: false }),
       api("/api/users/profesores"),
     ]).then(([g, p, prof]) => {
@@ -37,6 +37,23 @@ export default function AdminGruposPage() {
     });
   };
   useEffect(() => { cargar(); }, []);
+
+  const reactivar = async (g) => {
+    try {
+      await api(`/api/grupos/${g.id}`, {
+        method: "PUT",
+        body: {
+          nombre: g.nombre, cupoMaximo: g.cupoMaximo, totalClases: g.totalClases,
+          horario: g.horario, salon: g.salon, activo: true,
+          profesorId: g.profesorId || null,
+        },
+      });
+      cargar();
+      setModal({ open: true, title: "Grupo reactivado", message: `"${g.programa?.nombre} · ${g.nombre}" volvió a estar activo.`, type: "success" });
+    } catch (err) {
+      setModal({ open: true, title: "Error", message: err.message, type: "error" });
+    }
+  };
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm({ ...empty, programaId: programas[0]?.id || "" }); };
   const abrirEditar = (g) => {
@@ -162,8 +179,11 @@ export default function AdminGruposPage() {
           </thead>
           <tbody>
             {grupos.map(g => (
-              <tr key={g.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                <td style={td}>{g.programa.nombre}</td>
+              <tr key={g.id} style={{ borderBottom: `1px solid ${C.divider}`, opacity: g.activo ? 1 : 0.6 }}>
+                <td style={td}>
+                  {g.programa.nombre}
+                  {!g.activo && <span style={{ marginLeft: 6, fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700, color: C.danger, background: "#fdf1ec", textTransform: "uppercase" }}>Inactivo</span>}
+                </td>
                 <td style={{ ...td, fontWeight: 500 }}>{g.nombre}</td>
                 <td style={td}>{g.profesor ? `${g.profesor.nombre} ${g.profesor.apellido}` : <span style={{ color: C.muted, fontStyle: "italic" }}>Sin asignar</span>}</td>
                 <td style={td}>{g.horario}</td>
@@ -172,7 +192,11 @@ export default function AdminGruposPage() {
                 <td style={td}>{g.cupoMaximo}</td>
                 <td style={{ ...td, textAlign: "right" }}>
                   <button onClick={() => abrirEditar(g)} style={btnSm}>Editar</button>
-                  <button onClick={() => setConfirmDel(g)} style={{ ...btnSm, color: C.danger, marginLeft: 6 }}>Desactivar</button>
+                  {g.activo ? (
+                    <button onClick={() => setConfirmDel(g)} style={{ ...btnSm, color: C.danger, marginLeft: 6 }}>Desactivar</button>
+                  ) : (
+                    <button onClick={() => reactivar(g)} style={{ ...btnSm, marginLeft: 6 }}>Reactivar</button>
+                  )}
                 </td>
               </tr>
             ))}

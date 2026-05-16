@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/lib/AuthContext";
+import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
 
 export default function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -14,7 +14,7 @@ export default function ProtectedRoute({ children, roles }) {
       return;
     }
     if (roles && !roles.includes(user.rol)) {
-      router.push("/login");
+      router.replace(redirectByRol(user.rol));
     }
   }, [user, loading, router, roles]);
 

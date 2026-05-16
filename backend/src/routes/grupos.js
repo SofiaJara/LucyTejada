@@ -6,8 +6,11 @@ import { registrar } from '../bitacora.js';
 const router = express.Router();
 
 router.get('/', authenticate, async (req, res) => {
-  const { profesorId, programaId } = req.query;
-  const where = { activo: true };
+  const { profesorId, programaId, incluirInactivos } = req.query;
+  const where = {};
+  if (!(req.user.rol === 'admin' && incluirInactivos === 'true')) {
+    where.activo = true;
+  }
   if (profesorId) where.profesorId = Number(profesorId);
   if (programaId) where.programaId = Number(programaId);
 

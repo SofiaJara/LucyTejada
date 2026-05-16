@@ -20,8 +20,18 @@ export default function AdminProgramasPage() {
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
 
-  const cargar = () => api("/api/programas", { auth: false }).then(setProgramas);
+  const cargar = () => api("/api/programas?incluirInactivos=true").then(setProgramas);
   useEffect(() => { cargar(); }, []);
+
+  const reactivar = async (p) => {
+    try {
+      await api(`/api/programas/${p.id}`, { method: "PUT", body: { ...p, activo: true } });
+      cargar();
+      setModal({ open: true, title: "Programa reactivado", message: `"${p.nombre}" volvió a estar activo.`, type: "success" });
+    } catch (err) {
+      setModal({ open: true, title: "Error", message: err.message, type: "error" });
+    }
+  };
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (p) => { setEditar(p.id); setForm({ ...empty, ...p }); };
@@ -113,8 +123,18 @@ export default function AdminProgramasPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
         {programas.map(p => (
-          <div key={p.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "18px 20px" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.head, marginBottom: 4 }}>{p.nombre}</div>
+          <div key={p.id} style={{
+            background: p.activo ? C.card : "#f5f5f5",
+            border: `1px solid ${p.activo ? C.border : "#d8d8d8"}`,
+            borderRadius: 8, padding: "18px 20px",
+            opacity: p.activo ? 1 : 0.78,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, gap: 8 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.head }}>{p.nombre}</div>
+              {!p.activo && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, fontWeight: 700, color: C.danger, background: "#fdf1ec", textTransform: "uppercase" }}>Inactivo</span>
+              )}
+            </div>
             <div style={{ fontSize: 12, color: C.btn, fontWeight: 600, marginBottom: 10 }}>{p.categoria} · {p.duracion}</div>
             <p style={{ fontSize: 13, color: C.body, margin: "0 0 10px", lineHeight: 1.5 }}>
               {p.descripcion || "Sin descripción."}
@@ -124,7 +144,11 @@ export default function AdminProgramasPage() {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => abrirEditar(p)} style={btnSm}>Editar</button>
-              <button onClick={() => setConfirmDel(p)} style={{ ...btnSm, color: C.danger }}>Desactivar</button>
+              {p.activo ? (
+                <button onClick={() => setConfirmDel(p)} style={{ ...btnSm, color: C.danger }}>Desactivar</button>
+              ) : (
+                <button onClick={() => reactivar(p)} style={btnSm}>Reactivar</button>
+              )}
             </div>
           </div>
         ))}

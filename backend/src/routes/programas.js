@@ -6,8 +6,9 @@ import { registrar } from '../bitacora.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const { categoria, busqueda } = req.query;
-  const where = { activo: true };
+  const { categoria, busqueda, incluirInactivos } = req.query;
+  const where = {};
+  if (incluirInactivos !== 'true') where.activo = true;
   if (categoria) where.categoria = categoria;
   if (busqueda) where.nombre = { contains: busqueda };
 
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
     where,
     include: {
       grupos: {
-        where: { activo: true },
+        where: incluirInactivos === 'true' ? undefined : { activo: true },
         include: {
           profesor: { select: { id: true, nombre: true, apellido: true } },
           _count: { select: { inscripciones: true } },
