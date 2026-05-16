@@ -74,4 +74,26 @@ describe('notificaciones', () => {
       .send({ usuarioIds: [estudiante.id], titulo: 'x', mensaje: 'x' });
     assert.equal(res.status, 403);
   });
+
+  test('admin puede leer su bandeja de notificaciones (CAR-09)', async () => {
+    const { admin } = await seedBasic();
+    await prisma.notificacion.createMany({
+      data: [
+        { usuarioId: admin.id, titulo: 'Solicitud de reset', mensaje: 'X pide reset', categoria: 'administrativo' },
+        { usuarioId: admin.id, titulo: 'Backup automatico', mensaje: 'ok', categoria: 'sistema', leida: true },
+      ],
+    });
+    const t = await login(admin.correo, 'password123');
+    const res = await request(app).get('/api/notificaciones').set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.length, 2);
+    const noLeidas = res.body.filter(n => !n.leida);
+    assert.equal(noLeidas.length, 1);
+    assert.equal(noLeidas[0].titulo, 'Solicitud de reset');
+
+    // marcar todas como leídas también funciona para admin
+    await request(app).post('/api/notificaciones/leer-todas').set('Authorization', `Bearer ${t}`);
+    const tras = await prisma.notificacion.findMany({ where: { usuarioId: admin.id } });
+    assert.ok(tras.every(n => n.leida));
+  });
 });

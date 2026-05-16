@@ -6,15 +6,16 @@ import useUnreadCount from "./useUnreadCount";
 const C = { btn: "#3A6048", border: "#b8cdc0", muted: "#4a5a52" };
 
 const navItems = [
-  { label: "Dashboard",      href: "/admin/dashboard" },
-  { label: "Usuarios",       href: "/admin/usuarios" },
-  { label: "Programas",      href: "/admin/programas" },
-  { label: "Grupos",         href: "/admin/grupos" },
-  { label: "Lista de espera",href: "/admin/lista-espera" },
-  { label: "Reportes",       href: "/admin/reportes" },
-  { label: "Notificaciones", href: "/admin/notificaciones", showBadge: true },
-  { label: "Bitácora",       href: "/admin/bitacora" },
-  { label: "Mi perfil",      href: "/admin/perfil" },
+  { label: "Dashboard",       href: "/admin/dashboard" },
+  { label: "Usuarios",        href: "/admin/usuarios" },
+  { label: "Programas",       href: "/admin/programas" },
+  { label: "Grupos",          href: "/admin/grupos" },
+  { label: "Lista de espera", href: "/admin/lista-espera" },
+  { label: "Reportes",        href: "/admin/reportes" },
+  { label: "Bandeja",         href: "/admin/bandeja", showBadge: true },
+  { label: "Enviar aviso",    href: "/admin/notificaciones" },
+  { label: "Bitácora",        href: "/admin/bitacora" },
+  { label: "Mi perfil",       href: "/admin/perfil" },
 ];
 
 export default function AdminSidebar() {
