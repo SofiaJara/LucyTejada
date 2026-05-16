@@ -73,6 +73,32 @@ tr:hover td {
   background: rgba(58, 96, 72, 0.025);
 }
 
+/* Hover en items de sidebar (clase lt-sidebar-item) */
+.lt-sidebar-item:hover {
+  background: #f1f7f3 !important;
+  color: #3A6048 !important;
+}
+
+/* Hover en tarjetas métricas del dashboard */
+.lt-metric-card {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.lt-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(58, 96, 72, 0.14);
+}
+
+/* Hover sutil para botones de acción */
+.lt-btn-primary {
+  transition: filter 0.15s ease-out, transform 0.05s ease-out;
+}
+.lt-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.lt-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 /* Animation for cards */
 @keyframes fadeInUp {
   from {

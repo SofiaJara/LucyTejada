@@ -68,7 +68,7 @@ export default function DashboardProfesorPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 26 }}>
         {metrics.map(m => (
           <Link key={m.label} href={m.href} style={{ textDecoration: "none" }}>
-            <div style={{
+            <div className="lt-metric-card" style={{
               background: C.card, border: `1.5px solid ${C.metricBorder}`, borderRadius: 8,
               padding: "20px 16px", textAlign: "center", cursor: "pointer",
             }}>

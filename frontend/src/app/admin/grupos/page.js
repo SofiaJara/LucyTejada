@@ -70,10 +70,17 @@ function AdminGruposPage() {
   });
 
   const idsInscritos = (grupo) => new Set((grupo.inscripciones || []).map(i => i.estudiante?.id ?? i.estudianteId));
+  // Backend rechaza si el estudiante ya tiene inscripción activa o en lista de espera
+  // en otro grupo del mismo programa. Excluimos esos casos del selector para no mostrar
+  // candidatos que de todos modos no se podrán inscribir.
   const candidatosParaGrupo = (grupo) => {
     if (!grupo) return [];
     const ya = idsInscritos(grupo);
-    return estudiantes.filter(e => !ya.has(e.id));
+    const otroGrupoDelPrograma = (estudiante) =>
+      (estudiante.inscripciones || []).some(i =>
+        i.grupoId !== grupo.id && i.grupo?.programaId === grupo.programaId
+      );
+    return estudiantes.filter(e => !ya.has(e.id) && !otroGrupoDelPrograma(e));
   };
 
   const abrirInscribir = (g) => {

@@ -153,7 +153,7 @@ export default function AdminDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
         {metrics.map(m => (
           <Link key={m.label} href={m.href} style={{ textDecoration: "none" }}>
-            <div style={{
+            <div className="lt-metric-card" style={{
               background: m.highlight ? "#fdf1ec" : C.card,
               border: `1.5px solid ${m.highlight ? "#a8442e" : C.metricBorder}`,
               borderRadius: 8, padding: "20px 14px", textAlign: "center", cursor: "pointer",

@@ -7,6 +7,7 @@ export default function SidebarItem({ href, label, active, badge }) {
   return (
     <Link
       href={href}
+      className={active ? undefined : "lt-sidebar-item"}
       style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "9px 18px",
@@ -16,6 +17,7 @@ export default function SidebarItem({ href, label, active, badge }) {
         textDecoration: "none",
         borderLeft: active ? `3px solid ${C.btn}` : "3px solid transparent",
         background: active ? "#eef5f0" : "transparent",
+        transition: "background 0.12s ease-out, color 0.12s ease-out",
       }}
     >
       <span>{label}</span>
