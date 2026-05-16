@@ -97,7 +97,7 @@ export default function ListaEsperaPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Link href={`/admin/grupos`} style={btnGhost}>Ver grupo</Link>
+                  <Link href={`/admin/grupos?busqueda=${encodeURIComponent(g.grupo)}`} style={btnGhost}>Ver grupo</Link>
                   <button
                     onClick={() => setConfirmPromo(g)}
                     disabled={busy || g.cuposLibres === 0}

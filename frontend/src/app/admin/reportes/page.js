@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 import { exportCSV, exportXLS, exportPDF } from "@/app/lib/exporters";
 
@@ -10,13 +11,24 @@ const C = {
   danger: "#a8442e",
 };
 
-export default function ReportesPage() {
-  const [tab, setTab] = useState("asistencia");
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const t = new URLSearchParams(window.location.search).get("tab");
-    if (t) setTab(t);
-  }, []);
+export default function ReportesPageWrapper() {
+  return (
+    <Suspense fallback={<p style={{ color: "#4a5a52" }}>Cargando...</p>}>
+      <ReportesPage />
+    </Suspense>
+  );
+}
+
+function ReportesPage() {
+  const router = useRouter();
+  const search = useSearchParams();
+  const [tab, setTab] = useState(search.get("tab") || "asistencia");
+  const cambiarTab = (nuevo) => {
+    setTab(nuevo);
+    const params = new URLSearchParams(search.toString());
+    params.set("tab", nuevo);
+    router.replace(`/admin/reportes?${params.toString()}`, { scroll: false });
+  };
   const [asist, setAsist] = useState([]);
   const [inscr, setInscr] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -144,7 +156,7 @@ export default function ReportesPage() {
           { key: "demografia", label: "Demografía" },
           { key: "desercion", label: "Deserción" },
         ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
+          <button key={t.key} onClick={() => cambiarTab(t.key)} style={{
             padding: "8px 16px", borderRadius: 6,
             border: `1.5px solid ${tab === t.key ? C.btn : C.border}`,
             background: tab === t.key ? C.btn : "#fff",

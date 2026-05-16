@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
 
@@ -15,7 +16,16 @@ const empty = {
   horario: "", salon: "", programaId: "", profesorId: "",
 };
 
-export default function AdminGruposPage() {
+export default function AdminGruposPageWrapper() {
+  return (
+    <Suspense fallback={<p style={{ color: "#4a5a52" }}>Cargando...</p>}>
+      <AdminGruposPage />
+    </Suspense>
+  );
+}
+
+function AdminGruposPage() {
+  const search = useSearchParams();
   const [grupos, setGrupos] = useState([]);
   const [programas, setProgramas] = useState([]);
   const [profesores, setProfesores] = useState([]);
@@ -25,9 +35,9 @@ export default function AdminGruposPage() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
-  const [programaFiltro, setProgramaFiltro] = useState("");
-  const [activoFiltro, setActivoFiltro] = useState("");
+  const [busqueda, setBusqueda] = useState(search.get("busqueda") || "");
+  const [programaFiltro, setProgramaFiltro] = useState(search.get("programaId") || "");
+  const [activoFiltro, setActivoFiltro] = useState(search.get("activo") || "");
   const [inscribir, setInscribir] = useState(null); // grupo a inscribir
   const [inscribirEstId, setInscribirEstId] = useState("");
   const [inscribirBusy, setInscribirBusy] = useState(false);
