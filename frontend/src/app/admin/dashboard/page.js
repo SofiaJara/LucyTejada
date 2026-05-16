@@ -108,14 +108,14 @@ export default function AdminDashboard() {
   if (!stats) return <p style={{ color: C.muted }}>Cargando...</p>;
 
   const metrics = [
-    { label: "Estudiantes activos", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante" },
-    { label: "Profesores", value: stats.totalProfesores, href: "/admin/usuarios?rol=profesor" },
+    { label: "Estudiantes activos", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante&activo=true" },
+    { label: "Profesores", value: stats.totalProfesores, href: "/admin/usuarios?rol=profesor&activo=true" },
     { label: "Programas activos", value: stats.totalProgramas, href: "/admin/programas" },
     { label: "Grupos activos", value: stats.totalGrupos, href: "/admin/grupos" },
-    { label: "Inscripciones activas", value: stats.inscripcionesActivas, href: "/admin/grupos" },
-    { label: "Evaluaciones", value: stats.evaluacionesRecientes, href: "/admin/reportes" },
+    { label: "Inscripciones activas", value: stats.inscripcionesActivas, href: "/admin/reportes?tab=inscripciones" },
+    { label: "Evaluaciones", value: stats.evaluacionesRecientes, href: "/admin/reportes?tab=evaluaciones" },
     { label: "Lista de espera", value: stats.listaEspera ?? 0, href: "/admin/grupos" },
-    { label: "Estudiantes inactivos", value: stats.estudiantesInactivos ?? 0, href: "/admin/usuarios?rol=estudiante" },
+    { label: "Estudiantes inactivos", value: stats.estudiantesInactivos ?? 0, href: "/admin/usuarios?rol=estudiante&activo=false" },
     { label: "En riesgo de deserción", value: stats.enRiesgoDesercion ?? 0, href: "/admin/reportes?tab=desercion", highlight: (stats.enRiesgoDesercion ?? 0) > 0 },
   ];
 
