@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, apiUrl } from "@/app/lib/api";
 import BarChart from "@/app/components/lt/BarChart";
+import ConfirmModal from "@/app/components/lt/ConfirmModal";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -19,6 +20,8 @@ export default function AdminDashboard() {
   const [backupOk, setBackupOk] = useState("");
   const [backupErr, setBackupErr] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(null);
+  const [evalsDist, setEvalsDist] = useState([]);
 
   const cargarBackups = () => api("/api/admin/backups").then(setBackups).catch(() => {});
 
@@ -26,6 +29,14 @@ export default function AdminDashboard() {
     api("/api/admin/dashboard").then(setStats).catch(console.error);
     api("/api/admin/reportes/asistencia").then(setReporteAsist).catch(console.error);
     api("/api/admin/reportes/inscripciones").then(setReporteInscr).catch(console.error);
+    api("/api/admin/reportes/evaluaciones").then(evals => {
+      const orden = ["Excelente", "Bueno", "Regular", "Deficiente"];
+      const conteo = orden.map(v => ({
+        valoracion: v,
+        count: evals.filter(e => e.valoracion === v).length,
+      }));
+      setEvalsDist(conteo);
+    }).catch(console.error);
     cargarBackups();
   }, []);
 
@@ -40,6 +51,21 @@ export default function AdminDashboard() {
     } finally {
       setBackupBusy(false);
       setTimeout(() => { setBackupOk(""); setBackupErr(""); }, 4000);
+    }
+  };
+
+  const restaurarBackup = async (archivo) => {
+    setConfirmRestore(null);
+    setBackupBusy(true); setBackupErr(""); setBackupOk("");
+    try {
+      const info = await api(`/api/admin/backups/${archivo}/restaurar`, { method: "POST" });
+      setBackupOk(`Backup ${info.restaurado} restaurado. Snapshot previo guardado como ${info.backupPrevio}.`);
+      cargarBackups();
+    } catch (e) {
+      setBackupErr(e.message);
+    } finally {
+      setBackupBusy(false);
+      setTimeout(() => { setBackupOk(""); setBackupErr(""); }, 6000);
     }
   };
 
@@ -78,6 +104,17 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+      <ConfirmModal
+        open={!!confirmRestore}
+        title="Restaurar respaldo"
+        message={confirmRestore
+          ? `Vas a reemplazar la base de datos actual con ${confirmRestore.archivo} (${(confirmRestore.tamanoBytes / 1024).toFixed(1)} KB, generado ${new Date(confirmRestore.creadoEn).toLocaleString("es-CO")}). Se guardará un snapshot del estado previo. ¿Continuar?`
+          : ""}
+        type="warning"
+        confirmText="Sí, restaurar"
+        onConfirm={() => restaurarBackup(confirmRestore.archivo)}
+        onCancel={() => setConfirmRestore(null)}
+      />
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.head, margin: "0 0 6px" }}>Panel de administración</h2>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 22px" }}>Resumen general del Centro Cultural Lucy Tejada</p>
 
@@ -118,6 +155,15 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      <div style={{ ...card, marginBottom: 22 }}>
+        <h3 style={h3}>Distribución de evaluaciones cualitativas</h3>
+        {evalsDist.every(e => e.count === 0) ? (
+          <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Aún no se han registrado evaluaciones.</p>
+        ) : (
+          <BarChart data={evalsDist} labelKey="valoracion" valueKey="count" color="#3A6048" />
+        )}
+      </div>
+
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
           <div>
@@ -140,20 +186,36 @@ export default function AdminDashboard() {
                 <th style={thBk}>Archivo</th>
                 <th style={thBk}>Tamaño</th>
                 <th style={thBk}>Generado</th>
+                <th style={thBk}>Integridad</th>
                 <th style={{ ...thBk, textAlign: "right" }}></th>
               </tr>
             </thead>
             <tbody>
-              {backups.slice(0, 5).map(b => (
-                <tr key={b.archivo} style={{ borderBottom: `1px solid ${C.divider}` }}>
-                  <td style={tdBk}>{b.archivo}</td>
-                  <td style={tdBk}>{(b.tamanoBytes / 1024).toFixed(1)} KB</td>
-                  <td style={tdBk}>{new Date(b.creadoEn).toLocaleString("es-CO")}</td>
-                  <td style={{ ...tdBk, textAlign: "right" }}>
-                    <button onClick={() => descargarBackup(b.archivo)} style={btnSm}>Descargar</button>
-                  </td>
-                </tr>
-              ))}
+              {backups.slice(0, 5).map(b => {
+                const intColor = b.integridad === "ok" ? C.btn : b.integridad === "alterado" ? "#a8442e" : "#a06b1f";
+                const intLabel = b.integridad === "ok" ? "OK" : b.integridad === "alterado" ? "ALTERADO" : "SIN HASH";
+                return (
+                  <tr key={b.archivo} style={{ borderBottom: `1px solid ${C.divider}` }}>
+                    <td style={tdBk} title={b.sha256 ? `SHA-256: ${b.sha256}` : ""}>{b.archivo}</td>
+                    <td style={tdBk}>{(b.tamanoBytes / 1024).toFixed(1)} KB</td>
+                    <td style={tdBk}>{new Date(b.creadoEn).toLocaleString("es-CO")}</td>
+                    <td style={tdBk}>
+                      <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, fontWeight: 700, color: intColor, background: "#f5f7f5" }}>
+                        {intLabel}
+                      </span>
+                    </td>
+                    <td style={{ ...tdBk, textAlign: "right" }}>
+                      <button onClick={() => descargarBackup(b.archivo)} style={btnSm}>Descargar</button>
+                      <button
+                        onClick={() => setConfirmRestore(b)}
+                        disabled={b.integridad === "alterado" || backupBusy}
+                        style={{ ...btnSm, marginLeft: 6, color: b.integridad === "alterado" ? "#bbb" : "#a06b1f", cursor: b.integridad === "alterado" ? "not-allowed" : "pointer" }}
+                        title={b.integridad === "alterado" ? "Integridad alterada — no se puede restaurar" : "Restaurar este respaldo (reemplaza la base de datos actual)"}
+                      >Restaurar</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

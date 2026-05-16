@@ -13,6 +13,16 @@ const C = {
 const valoraciones = ["Excelente", "Bueno", "Regular", "Deficiente"];
 const periodoActual = `${new Date().getFullYear()}-${new Date().getMonth() < 6 ? "1" : "2"}`;
 
+// Períodos dinámicos: año anterior, actual y siguiente — sobrevive al paso del tiempo.
+function generarPeriodos() {
+  const y = new Date().getFullYear();
+  return [
+    `${y - 1}-1`, `${y - 1}-2`,
+    `${y}-1`, `${y}-2`,
+    `${y + 1}-1`, `${y + 1}-2`,
+  ];
+}
+
 const indicadores = [
   { key: "participacion", label: "Participación en clase" },
   { key: "practica",      label: "Práctica y ensayo" },
@@ -142,7 +152,7 @@ function EvaluacionesPage() {
           ))}
         </select>
         <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} style={selectStyle}>
-          {["2025-1", "2025-2", "2026-1", "2026-2"].map(p => <option key={p}>{p}</option>)}
+          {generarPeriodos().map(p => <option key={p}>{p}</option>)}
         </select>
       </div>
 

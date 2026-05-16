@@ -107,6 +107,39 @@ router.post('/logout', async (req, res) => {
   res.json({ ok: true });
 });
 
+router.post('/solicitar-reset', async (req, res) => {
+  // Por privacidad respondemos 200 incluso si el correo no existe (evita enumeración).
+  const { correo } = req.body || {};
+  if (!correo || typeof correo !== 'string') {
+    return res.status(400).json({ error: 'Correo requerido' });
+  }
+  try {
+    const usuario = await prisma.usuario.findUnique({ where: { correo } });
+    if (usuario && usuario.activo) {
+      const admins = await prisma.usuario.findMany({ where: { rol: 'admin', activo: true }, select: { id: true } });
+      if (admins.length > 0) {
+        await prisma.notificacion.createMany({
+          data: admins.map(a => ({
+            usuarioId: a.id,
+            titulo: 'Solicitud de restablecimiento de contraseña',
+            mensaje: `El usuario ${usuario.nombre} ${usuario.apellido} (${usuario.correo}, rol ${usuario.rol}) solicita restablecer su contraseña. Edita el usuario en Gestión de usuarios para asignar una nueva.`,
+            categoria: 'administrativo',
+          })),
+        });
+      }
+      await registrar({
+        accion: 'create', entidad: 'reset_solicitud', entidadId: usuario.id,
+        descripcion: `Solicitud de reset de contraseña para ${usuario.correo}`,
+        req: { headers: req.headers, ip: req.ip, socket: req.socket },
+      });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.json({ ok: true });
+  }
+});
+
 router.get('/me', async (req, res) => {
   try {
     const header = req.headers.authorization;

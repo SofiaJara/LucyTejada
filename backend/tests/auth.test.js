@@ -88,4 +88,36 @@ describe('auth', () => {
     const log = await prisma.bitacora.findFirst({ where: { usuarioId: u.id, accion: 'login' } });
     assert.ok(log, 'debería existir un registro de login en bitácora');
   });
+
+  test('POST /api/auth/solicitar-reset notifica a admins cuando el correo existe', async () => {
+    const admin = await makeUser({ documento: 'rA', correo: 'reset-admin@x.com', rol: 'admin' });
+    const user = await makeUser({ documento: 'rU', correo: 'olvido@x.com' });
+    const res = await request(app).post('/api/auth/solicitar-reset').send({ correo: 'olvido@x.com' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+
+    const { default: prisma } = await import('../src/prisma.js');
+    const notifs = await prisma.notificacion.findMany({ where: { usuarioId: admin.id } });
+    assert.equal(notifs.length, 1);
+    assert.match(notifs[0].titulo, /restablecimiento/i);
+    assert.match(notifs[0].mensaje, /olvido@x.com/);
+
+    const bit = await prisma.bitacora.findFirst({ where: { entidad: 'reset_solicitud', entidadId: user.id } });
+    assert.ok(bit, 'la solicitud debe quedar en bitácora');
+  });
+
+  test('POST /api/auth/solicitar-reset no filtra existencia para correos desconocidos', async () => {
+    await makeUser({ documento: 'rA2', correo: 'reset-admin2@x.com', rol: 'admin' });
+    const res = await request(app).post('/api/auth/solicitar-reset').send({ correo: 'desconocido@x.com' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    const { default: prisma } = await import('../src/prisma.js');
+    const notifs = await prisma.notificacion.findMany();
+    assert.equal(notifs.length, 0, 'no debe crear notificación para correos que no existen');
+  });
+
+  test('POST /api/auth/solicitar-reset valida que se envíe un correo', async () => {
+    const res = await request(app).post('/api/auth/solicitar-reset').send({});
+    assert.equal(res.status, 400);
+  });
 });

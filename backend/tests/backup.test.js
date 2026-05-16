@@ -12,7 +12,7 @@ const BACKUP_DIR = path.resolve(__dirname, '..', 'backups');
 function limpiarBackups() {
   if (fs.existsSync(BACKUP_DIR)) {
     for (const f of fs.readdirSync(BACKUP_DIR)) {
-      if (f.endsWith('.db')) fs.unlinkSync(path.join(BACKUP_DIR, f));
+      if (f.endsWith('.db') || f.endsWith('.sha256')) fs.unlinkSync(path.join(BACKUP_DIR, f));
     }
   }
 }
@@ -67,5 +67,61 @@ describe('backups (CAR-12)', () => {
     const dl = await request(app).get('/api/admin/backups/..%2Fdev.db/descargar').set('Authorization', `Bearer ${t}`);
     // path.basename limpia la barra; el archivo dev.db no existe en BACKUP_DIR
     assert.equal(dl.status, 404);
+  });
+
+  test('crea sidecar .sha256 y reporta integridad ok', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    assert.equal(c.status, 201);
+    assert.match(c.body.sha256, /^[0-9a-f]{64}$/);
+    assert.equal(c.body.integridad, 'ok');
+
+    const sidecar = path.join(BACKUP_DIR, `${c.body.archivo}.sha256`);
+    assert.ok(fs.existsSync(sidecar), 'debe existir el sidecar con el hash');
+
+    const list = await request(app).get('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    const entry = list.body.find(b => b.archivo === c.body.archivo);
+    assert.equal(entry.integridad, 'ok');
+    assert.equal(entry.sha256, c.body.sha256);
+  });
+
+  test('detecta alteración del archivo de backup', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    fs.appendFileSync(path.join(BACKUP_DIR, c.body.archivo), 'corrupcion');
+
+    const list = await request(app).get('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    const entry = list.body.find(b => b.archivo === c.body.archivo);
+    assert.equal(entry.integridad, 'alterado');
+  });
+
+  test('POST /api/admin/backups/:archivo/restaurar requiere admin y restaura', async () => {
+    const { admin, profesor } = await seedBasic();
+    const tAdmin = await login(admin.correo, 'password123');
+    const tProf = await login(profesor.correo, 'password123');
+
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${tAdmin}`);
+    const archivo = c.body.archivo;
+
+    const denied = await request(app).post(`/api/admin/backups/${archivo}/restaurar`).set('Authorization', `Bearer ${tProf}`);
+    assert.equal(denied.status, 403);
+
+    const ok = await request(app).post(`/api/admin/backups/${archivo}/restaurar`).set('Authorization', `Bearer ${tAdmin}`);
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.restaurado, archivo);
+    assert.match(ok.body.backupPrevio, /pre-restore-/);
+  });
+
+  test('restaurar rechaza backup con integridad alterada', async () => {
+    const { admin } = await seedBasic();
+    const t = await login(admin.correo, 'password123');
+    const c = await request(app).post('/api/admin/backups').set('Authorization', `Bearer ${t}`);
+    fs.appendFileSync(path.join(BACKUP_DIR, c.body.archivo), 'tampered');
+
+    const res = await request(app).post(`/api/admin/backups/${c.body.archivo}/restaurar`).set('Authorization', `Bearer ${t}`);
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /integridad/i);
   });
 });

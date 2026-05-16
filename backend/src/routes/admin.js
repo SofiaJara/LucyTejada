@@ -4,7 +4,7 @@ import prisma from '../prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { registrar } from '../bitacora.js';
 import { calcularDesercion } from '../services/desercion.js';
-import { crearBackup, listarBackups, rutaBackup } from '../services/backup.js';
+import { crearBackup, listarBackups, rutaBackup, restaurarBackup } from '../services/backup.js';
 
 const router = express.Router();
 
@@ -358,6 +358,22 @@ router.get('/backups/:archivo/descargar', (req, res) => {
   const ruta = rutaBackup(req.params.archivo);
   if (!ruta) return res.status(404).json({ error: 'Backup no encontrado' });
   res.download(ruta);
+});
+
+router.post('/backups/:archivo/restaurar', async (req, res) => {
+  try {
+    const info = await restaurarBackup(req.params.archivo);
+    await registrar({
+      accion: 'update', entidad: 'backup', entidadId: null,
+      descripcion: `Admin restauró backup ${info.restaurado} (snapshot previo: ${info.backupPrevio})`,
+      req,
+    });
+    res.json(info);
+  } catch (e) {
+    if (e.message.includes('no encontrado')) return res.status(404).json({ error: e.message });
+    if (e.message.includes('integridad')) return res.status(409).json({ error: e.message });
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Bitácora
