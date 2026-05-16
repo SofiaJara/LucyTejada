@@ -21,24 +21,32 @@ export default function BitacoraPage() {
   const [registros, setRegistros] = useState([]);
   const [accion, setAccion] = useState("");
   const [entidad, setEntidad] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const cargar = () => {
+  useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (accion) params.set("accion", accion);
     if (entidad) params.set("entidad", entidad);
+    if (usuario) params.set("usuario", usuario);
     if (desde) params.set("desde", desde);
     if (hasta) params.set("hasta", new Date(hasta + "T23:59:59").toISOString());
     params.set("limit", "500");
-    api(`/api/admin/bitacora?${params.toString()}`)
-      .then(setRegistros)
-      .finally(() => setLoading(false));
-  };
+    const t = setTimeout(() => {
+      api(`/api/admin/bitacora?${params.toString()}`)
+        .then(setRegistros)
+        .finally(() => setLoading(false));
+    }, usuario ? 220 : 0);
+    return () => clearTimeout(t);
+  }, [accion, entidad, usuario, desde, hasta]);
 
-  useEffect(() => { cargar(); }, [accion, entidad, desde, hasta]);
+  const limpiarFiltros = () => {
+    setAccion(""); setEntidad(""); setUsuario(""); setDesde(""); setHasta("");
+  };
+  const hayFiltros = !!(accion || entidad || usuario || desde || hasta);
 
   const exportData = registros.map(r => ({
     fecha: new Date(r.createdAt).toLocaleString("es-CO"),
@@ -56,7 +64,14 @@ export default function BitacoraPage() {
         Registro de actividad: inicios de sesión, creación, modificación y eliminación de información.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto auto", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1fr 1fr auto auto auto auto", gap: 10, marginBottom: 16 }}>
+        <input
+          value={usuario}
+          onChange={(e) => setUsuario(e.target.value)}
+          placeholder="Buscar por correo de usuario..."
+          style={input}
+          title="Filtra por coincidencia parcial en el correo registrado"
+        />
         <select value={accion} onChange={(e) => setAccion(e.target.value)} style={input}>
           <option value="">Todas las acciones</option>
           <option value="login">Login</option>
@@ -75,12 +90,20 @@ export default function BitacoraPage() {
           <option value="asistencia">Asistencia</option>
           <option value="evaluacion">Evaluación</option>
           <option value="notificacion">Notificación</option>
+          <option value="backup">Backup</option>
+          <option value="reset_solicitud">Reset de contraseña</option>
         </select>
         <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={input} title="Desde" />
         <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={input} title="Hasta" />
-        <button onClick={() => exportCSV("bitacora.csv", exportData)} style={btnExp}>CSV</button>
-        <button onClick={() => exportXLS("bitacora.xls", exportData, "Bitácora")} style={btnExp}>Excel</button>
-        <button onClick={() => exportPDF("Bitácora de Auditoría", exportData)} style={btnExp}>PDF</button>
+        <button
+          onClick={limpiarFiltros}
+          disabled={!hayFiltros}
+          style={{ ...btnExp, color: hayFiltros ? "#4a5a52" : "#bbb", borderColor: hayFiltros ? "#b8cdc0" : "#e0e6e0", cursor: hayFiltros ? "pointer" : "not-allowed" }}
+          title="Limpiar filtros"
+        >Limpiar</button>
+        <button onClick={() => exportCSV("bitacora.csv", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>CSV</button>
+        <button onClick={() => exportXLS("bitacora.xls", exportData, "Bitácora")} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>Excel</button>
+        <button onClick={() => exportPDF("Bitácora de Auditoría", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>PDF</button>
       </div>
 
       <p style={{ fontSize: 13, color: C.muted, margin: "0 0 8px" }}>

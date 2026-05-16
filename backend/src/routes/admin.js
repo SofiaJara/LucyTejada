@@ -378,11 +378,12 @@ router.post('/backups/:archivo/restaurar', async (req, res) => {
 
 // Bitácora
 router.get('/bitacora', async (req, res) => {
-  const { accion, entidad, usuarioId, desde, hasta, limit } = req.query;
+  const { accion, entidad, usuarioId, usuario, desde, hasta, limit } = req.query;
   const where = {};
   if (accion) where.accion = accion;
   if (entidad) where.entidad = entidad;
   if (usuarioId) where.usuarioId = Number(usuarioId);
+  if (usuario) where.usuarioCorreo = { contains: usuario };
   if (desde || hasta) {
     where.createdAt = {};
     if (desde) where.createdAt.gte = new Date(desde);

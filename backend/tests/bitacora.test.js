@@ -81,6 +81,21 @@ describe('bitácora (CAR-11)', () => {
     assert.equal(logs[1].accion, 'update');
   });
 
+  test('GET /api/admin/bitacora filtra por correo de usuario', async () => {
+    const { admin, profesor } = await seedBasic();
+    const tAdmin = await login(admin.correo, 'password123');
+    await login(profesor.correo, 'password123'); // genera un login del profesor
+
+    const res = await request(app)
+      .get(`/api/admin/bitacora?usuario=${encodeURIComponent(profesor.correo.split('@')[0])}`)
+      .set('Authorization', `Bearer ${tAdmin}`);
+    assert.equal(res.status, 200);
+    assert.ok(res.body.length >= 1);
+    for (const r of res.body) {
+      assert.ok(r.usuarioCorreo && r.usuarioCorreo.includes(profesor.correo.split('@')[0]));
+    }
+  });
+
   test('notificación masiva queda registrada en bitácora', async () => {
     const { admin, estudiante } = await seedBasic();
     const t = await login(admin.correo, 'password123');
