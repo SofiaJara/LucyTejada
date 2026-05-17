@@ -90,10 +90,22 @@ router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
     where: { id },
     include: {
       programa: true,
-      inscripciones: { select: { estudianteId: true } },
+      inscripciones: { select: { estudianteId: true, estado: true } },
     },
   });
   if (!previo) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+  // Si reducen el cupo por debajo de los inscritos activos, rechazar.
+  // Las inscripciones en lista de espera no cuentan contra el cupo.
+  if (cupoMaximo !== undefined && cupoMaximo !== null && cupoMaximo !== '') {
+    const nuevoCupo = Number(cupoMaximo);
+    const activas = previo.inscripciones.filter(i => i.estado === 'activa').length;
+    if (Number.isFinite(nuevoCupo) && nuevoCupo < activas) {
+      return res.status(400).json({
+        error: `No puedes reducir el cupo a ${nuevoCupo}: hay ${activas} estudiante(s) inscrito(s) activamente.`,
+      });
+    }
+  }
 
   const grupo = await prisma.grupo.update({
     where: { id },
