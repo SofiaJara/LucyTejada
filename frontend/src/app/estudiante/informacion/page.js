@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/AuthContext";
 import BarChart from "@/app/components/lt/BarChart";
+import Spinner from "@/app/components/lt/Spinner";
 
 const VALORACION_SCORE = { Excelente: 4, Bueno: 3, Regular: 2, Deficiente: 1 };
 const VALORACION_COLOR = {
@@ -44,7 +45,7 @@ export default function InformacionEstudiantePage() {
 
   useEffect(() => {
     if (!user) return;
-    const onErr = (e) => { console.error(e); setLoadError(prev => prev || (e?.message || "No se pudo cargar la información.")); };
+    const onErr = (e) => setLoadError(prev => prev || (e?.message || "No se pudo cargar la información."));
     api("/api/users/me/perfil").then(setPerfil).catch(onErr);
     api("/api/evaluaciones/mias").then(setEvals).catch(onErr);
     api(`/api/asistencia/estudiante/${user.id}/resumen`).then(setResumen).catch(onErr);
@@ -66,7 +67,7 @@ export default function InformacionEstudiantePage() {
         </div>
       );
     }
-    return <p style={{ color: C.muted }}>Cargando información...</p>;
+    return <Spinner label="Cargando información..." />;
   }
 
   const inscripciones = perfil.inscripciones || [];

@@ -130,6 +130,7 @@ export default function InscripcionPage() {
 
       <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
         <input
+          aria-label="Buscar programa"
           placeholder="Buscar programa..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}

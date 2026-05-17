@@ -45,7 +45,6 @@ export default function DashboardProfesorPage() {
         setAsistPorGrupo(detalles);
       }
     }).catch((e) => {
-      console.error(e);
       setLoadError(e?.message || "No se pudo cargar el panel.");
     }).finally(() => setLoading(false));
   }, []);

@@ -30,7 +30,6 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const handleErr = (label) => (e) => {
-      console.error(label, e);
       setLoadError(prev => prev || `No se pudo cargar ${label}. ${e?.message || ""}`.trim());
     };
     api("/api/admin/dashboard").then(setStats).catch(handleErr("el resumen"));
