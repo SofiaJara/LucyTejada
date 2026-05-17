@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/AuthContext";
 import ConfirmModal from "./ConfirmModal";
 
@@ -11,6 +13,7 @@ const C = {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const menuRef = useRef(null);
@@ -19,16 +22,25 @@ export default function Navbar() {
     const onClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
     };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
     const onRequestLogout = () => { setOpen(false); setConfirm(true); };
     window.addEventListener("lt:request-logout", onRequestLogout);
     return () => {
       document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
       window.removeEventListener("lt:request-logout", onRequestLogout);
     };
   }, []);
 
+  // Cierra el menú al cambiar de ruta
+  useEffect(() => { setOpen(false); }, [pathname]);
+
   const roleLabel = user?.rol === "admin" ? "Administrador" : user?.rol === "profesor" ? "Profesor" : "Estudiante";
+  const rolePath = user?.rol === "admin" ? "/admin" : user?.rol === "profesor" ? "/profesor" : "/estudiante";
 
   return (
     <nav style={{
@@ -53,6 +65,9 @@ export default function Navbar() {
       <div ref={menuRef} style={{ position: "relative" }}>
         <button
           onClick={() => setOpen(!open)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Menú de usuario, ${user?.nombre || "Invitado"}`}
           style={{
             background: "transparent", border: "none", cursor: "pointer",
             fontFamily: "Segoe UI, sans-serif", fontSize: 13, color: C.body,
@@ -71,9 +86,9 @@ export default function Navbar() {
           <span>Hola, {user?.nombre || "Invitado"} ▾</span>
         </button>
         {open && (
-          <div style={{
+          <div role="menu" style={{
             position: "absolute", right: 0, top: 42, background: "#fff",
-            border: `1px solid ${C.border}`, borderRadius: 8, minWidth: 200,
+            border: `1px solid ${C.border}`, borderRadius: 8, minWidth: 220,
             boxShadow: "0 6px 24px rgba(28,38,32,0.12)", overflow: "hidden",
             zIndex: 200,
           }}>
@@ -83,12 +98,33 @@ export default function Navbar() {
               </div>
               <div style={{ fontSize: 11, color: C.muted }}>{roleLabel}</div>
             </div>
+            {user && (
+              <Link
+                href={`${rolePath}/perfil`}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                style={menuItemStyle}
+              >
+                Mi perfil
+              </Link>
+            )}
+            {user?.rol === "admin" && (
+              <Link
+                href="/admin/bandeja"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                style={menuItemStyle}
+              >
+                Bandeja
+              </Link>
+            )}
             <button
               onClick={() => { setOpen(false); setConfirm(true); }}
+              role="menuitem"
               style={{
-                width: "100%", padding: "10px 16px", textAlign: "left",
+                ...menuItemStyle, width: "100%", textAlign: "left",
                 background: "transparent", border: "none", cursor: "pointer",
-                fontSize: 13, color: C.body, fontFamily: "Segoe UI, sans-serif",
+                borderTop: `1px solid ${C.border}`,
               }}
             >
               Cerrar sesión
@@ -99,3 +135,12 @@ export default function Navbar() {
     </nav>
   );
 }
+
+const menuItemStyle = {
+  display: "block",
+  padding: "10px 16px",
+  fontSize: 13,
+  color: "#2c3a32",
+  fontFamily: "Segoe UI, sans-serif",
+  textDecoration: "none",
+};
