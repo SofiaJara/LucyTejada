@@ -75,8 +75,8 @@ describe('grupos', () => {
   test('PUT /api/grupos/:id rechaza reducir cupoMaximo por debajo de inscritos activos', async () => {
     const { admin, grupo, estudiante } = await seedBasic();
     const otroEst = await makeUser({ documento: 'E-OTRO', correo: 'otroe@x.com', rol: 'estudiante' });
-    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id, estado: 'activa' } });
-    await prisma.inscripcion.create({ data: { estudianteId: otroEst.id, grupoId: grupo.id, estado: 'activa' } });
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id, estado: 'activo' } });
+    await prisma.inscripcion.create({ data: { estudianteId: otroEst.id, grupoId: grupo.id, estado: 'activo' } });
     const t = await login(admin.correo, 'password123');
     const res = await request(app).put(`/api/grupos/${grupo.id}`)
       .set('Authorization', `Bearer ${t}`)
@@ -87,9 +87,23 @@ describe('grupos', () => {
     assert.equal(reread.cupoMaximo, grupo.cupoMaximo, 'cupoMaximo no debe cambiar tras rechazo');
   });
 
+  test('PUT /api/grupos/:id sólo cuenta inscripciones con estado "activo" (no lista_espera) al validar el cupo', async () => {
+    const { admin, grupo, estudiante } = await seedBasic();
+    const otroEst = await makeUser({ documento: 'E-ESP', correo: 'espera@x.com', rol: 'estudiante' });
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id, estado: 'activo' } });
+    await prisma.inscripcion.create({ data: { estudianteId: otroEst.id, grupoId: grupo.id, estado: 'lista_espera' } });
+    const t = await login(admin.correo, 'password123');
+    // Cupo = 1 debería ser aceptado: 1 activo, 1 en lista_espera (que no cuenta)
+    const res = await request(app).put(`/api/grupos/${grupo.id}`)
+      .set('Authorization', `Bearer ${t}`)
+      .send({ nombre: grupo.nombre, cupoMaximo: 1, horario: grupo.horario, salon: grupo.salon });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.cupoMaximo, 1);
+  });
+
   test('PUT /api/grupos/:id permite reducir cupoMaximo si quedan suficientes cupos', async () => {
     const { admin, grupo, estudiante } = await seedBasic();
-    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id, estado: 'activa' } });
+    await prisma.inscripcion.create({ data: { estudianteId: estudiante.id, grupoId: grupo.id, estado: 'activo' } });
     const t = await login(admin.correo, 'password123');
     const res = await request(app).put(`/api/grupos/${grupo.id}`)
       .set('Authorization', `Bearer ${t}`)

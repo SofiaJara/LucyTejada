@@ -99,7 +99,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
   // Las inscripciones en lista de espera no cuentan contra el cupo.
   if (cupoMaximo !== undefined && cupoMaximo !== null && cupoMaximo !== '') {
     const nuevoCupo = Number(cupoMaximo);
-    const activas = previo.inscripciones.filter(i => i.estado === 'activa').length;
+    const activas = previo.inscripciones.filter(i => i.estado === 'activo').length;
     if (Number.isFinite(nuevoCupo) && nuevoCupo < activas) {
       return res.status(400).json({
         error: `No puedes reducir el cupo a ${nuevoCupo}: hay ${activas} estudiante(s) inscrito(s) activamente.`,
