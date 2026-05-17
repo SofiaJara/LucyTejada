@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -23,6 +23,9 @@ export default function ConfirmModal({
   confirmText = "Aceptar", cancelText = "Cancelar",
   onConfirm, onCancel, hideCancel,
 }) {
+  const titleId = useId();
+  const confirmRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -31,6 +34,10 @@ export default function ConfirmModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onCancel]);
+
+  useEffect(() => {
+    if (open && confirmRef.current) confirmRef.current.focus();
+  }, [open]);
 
   if (!open) return null;
   const ts = typeStyles[type] || typeStyles.confirm;
@@ -46,16 +53,22 @@ export default function ConfirmModal({
       }}
       onClick={(e) => { if (e.target === e.currentTarget && onCancel) onCancel(); }}
     >
-      <div className="popup-content" style={{
-        background: C.card, borderRadius: 12, border: `1.5px solid ${C.border}`,
-        width: "100%", maxWidth: 440, boxShadow: "0 12px 40px rgba(28,38,32,0.18)",
-        fontFamily: "Segoe UI, sans-serif", overflow: "hidden",
-      }}>
+      <div
+        className="popup-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        style={{
+          background: C.card, borderRadius: 12, border: `1.5px solid ${C.border}`,
+          width: "100%", maxWidth: 440, boxShadow: "0 12px 40px rgba(28,38,32,0.18)",
+          fontFamily: "Segoe UI, sans-serif", overflow: "hidden",
+        }}
+      >
         <div style={{
           padding: "18px 22px", background: ts.bg,
           borderBottom: `1px solid ${C.border}`,
         }}>
-          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: ts.color }}>
+          <h3 id={titleId} style={{ margin: 0, fontSize: 17, fontWeight: 700, color: ts.color }}>
             {title}
           </h3>
         </div>
@@ -75,7 +88,7 @@ export default function ConfirmModal({
               color: C.muted, cursor: "pointer", fontWeight: 500,
             }}>{cancelText}</button>
           )}
-          <button onClick={onConfirm || onCancel} style={{
+          <button ref={confirmRef} onClick={onConfirm || onCancel} style={{
             padding: "8px 22px", border: "none", borderRadius: 6,
             background: ts.btn, color: "#fff", fontSize: 14,
             cursor: "pointer", fontWeight: 600,
