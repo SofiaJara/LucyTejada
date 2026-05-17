@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
+import PasswordInput from "@/app/components/lt/PasswordInput";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -92,6 +93,7 @@ function LoginPageInner() {
             placeholder="correo electrónico"
             aria-label="Correo electrónico"
             autoComplete="email"
+            autoFocus
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
             disabled={loading}
@@ -101,20 +103,14 @@ function LoginPageInner() {
               boxSizing: "border-box", outline: "none",
             }}
           />
-          <input
+          <PasswordInput
             id="login-contrasena"
-            type="password"
             placeholder="contraseña"
-            aria-label="Contraseña"
+            ariaLabel="Contraseña"
             autoComplete="current-password"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
             disabled={loading}
-            style={{
-              width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`,
-              borderRadius: 6, fontSize: 15, color: C.body, background: C.card,
-              boxSizing: "border-box", outline: "none",
-            }}
           />
           <button
             type="submit"

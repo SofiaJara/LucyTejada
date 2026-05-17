@@ -35,25 +35,51 @@ export default function NotificacionesView({ titulo = "Notificaciones", descripc
   }, [active, notifs]);
 
   const marcarLeida = async (id) => {
-    await api(`/api/notificaciones/${id}/leer`, { method: "POST" });
-    window.dispatchEvent(new Event("lt:notifs-changed"));
-    cargar();
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
+    try {
+      await api(`/api/notificaciones/${id}/leer`, { method: "POST" });
+      window.dispatchEvent(new Event("lt:notifs-changed"));
+    } catch {
+      cargar();
+    }
   };
 
   const marcarTodas = async () => {
-    await api("/api/notificaciones/leer-todas", { method: "POST" });
-    window.dispatchEvent(new Event("lt:notifs-changed"));
-    cargar();
+    if (!notifs.some(n => !n.leida)) return;
+    setNotifs(prev => prev.map(n => ({ ...n, leida: true })));
+    try {
+      await api("/api/notificaciones/leer-todas", { method: "POST" });
+      window.dispatchEvent(new Event("lt:notifs-changed"));
+    } catch {
+      cargar();
+    }
   };
+
+  const noLeidasCount = useMemo(() => notifs.filter(n => !n.leida).length, [notifs]);
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: descripcion ? 6 : 18 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.head }}>{titulo}</h2>
-        <button onClick={marcarTodas} style={{
-          background: "transparent", border: "none", fontSize: 13, color: C.btn,
-          cursor: "pointer", fontWeight: 600,
-        }}>Marcar todas como leídas</button>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.head }}>
+          {titulo}
+          {noLeidasCount > 0 && (
+            <span style={{
+              marginLeft: 10, fontSize: 13, fontWeight: 600, color: C.btnT,
+              background: C.btn, padding: "2px 9px", borderRadius: 12,
+              verticalAlign: "middle",
+            }}>{noLeidasCount}</span>
+          )}
+        </h2>
+        <button
+          onClick={marcarTodas}
+          disabled={noLeidasCount === 0}
+          style={{
+            background: "transparent", border: "none", fontSize: 13,
+            color: noLeidasCount === 0 ? C.muted : C.btn,
+            cursor: noLeidasCount === 0 ? "default" : "pointer",
+            fontWeight: 600, opacity: noLeidasCount === 0 ? 0.6 : 1,
+          }}
+        >Marcar todas como leídas</button>
       </div>
       {descripcion && (
         <p style={{ fontSize: 14, color: C.muted, margin: "0 0 18px" }}>{descripcion}</p>

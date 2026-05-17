@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/AuthContext";
 import ConfirmModal from "./ConfirmModal";
+import PasswordInput from "./PasswordInput";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -140,10 +141,21 @@ export default function ProfileEditor() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
             <Field label="Nueva contraseña *">
-              <input type="password" value={pwd.nueva} onChange={(e) => setPwd({ ...pwd, nueva: e.target.value })} style={inputStyle} placeholder="Mínimo 6 caracteres" />
+              <PasswordInput
+                value={pwd.nueva}
+                onChange={(e) => setPwd({ ...pwd, nueva: e.target.value })}
+                placeholder="Mínimo 6 caracteres"
+                autoComplete="new-password"
+                style={{ fontSize: 14, padding: "9px 44px 9px 12px", border: `1px solid ${C.border}` }}
+              />
             </Field>
             <Field label="Confirmar nueva contraseña *">
-              <input type="password" value={pwd.confirmar} onChange={(e) => setPwd({ ...pwd, confirmar: e.target.value })} style={inputStyle} />
+              <PasswordInput
+                value={pwd.confirmar}
+                onChange={(e) => setPwd({ ...pwd, confirmar: e.target.value })}
+                autoComplete="new-password"
+                style={{ fontSize: 14, padding: "9px 44px 9px 12px", border: `1px solid ${C.border}` }}
+              />
             </Field>
           </div>
 

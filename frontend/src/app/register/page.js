@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, redirectByRol } from "@/app/lib/AuthContext";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
+import PasswordInput from "@/app/components/lt/PasswordInput";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -135,11 +136,27 @@ export default function RegisterPage() {
           </div>
           <div>
             <label htmlFor="reg-contrasena" style={labelStyle}>Contraseña *</label>
-            <input id="reg-contrasena" name="contrasena" type="password" value={data.contrasena} onChange={onChange} style={inputStyle} required autoComplete="new-password" />
+            <PasswordInput
+              id="reg-contrasena"
+              name="contrasena"
+              value={data.contrasena}
+              onChange={onChange}
+              required
+              autoComplete="new-password"
+              style={{ fontSize: 14, padding: "9px 44px 9px 12px", border: `1.5px solid #b8cdc0` }}
+            />
           </div>
           <div>
             <label htmlFor="reg-contrasena2" style={labelStyle}>Confirmar contraseña *</label>
-            <input id="reg-contrasena2" name="contrasena2" type="password" value={data.contrasena2} onChange={onChange} style={inputStyle} required autoComplete="new-password" />
+            <PasswordInput
+              id="reg-contrasena2"
+              name="contrasena2"
+              value={data.contrasena2}
+              onChange={onChange}
+              required
+              autoComplete="new-password"
+              style={{ fontSize: 14, padding: "9px 44px 9px 12px", border: `1.5px solid #b8cdc0` }}
+            />
           </div>
           <div>
             <label htmlFor="reg-telefono" style={labelStyle}>Teléfono</label>
