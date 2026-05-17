@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/lib/api";
 import BarChart from "@/app/components/lt/BarChart";
+import Spinner from "@/app/components/lt/Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -45,7 +46,7 @@ export default function DashboardProfesorPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p style={{ color: C.muted }}>Cargando...</p>;
+  if (loading) return <Spinner label="Cargando dashboard..." />;
 
   const totalEstudiantes = grupos.reduce((sum, g) => sum + (g._count?.inscripciones || 0), 0);
   const totalClases = grupos.reduce((sum, g) => sum + (g._count?.clases || 0), 0);

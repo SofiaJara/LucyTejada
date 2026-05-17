@@ -8,3 +8,5 @@ dev.db-journal
 .DS_Store
 .idea/
 .vscode/
+memory/
+.claude/settings.local.json

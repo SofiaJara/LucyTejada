@@ -4,6 +4,7 @@ import Link from "next/link";
 import { api, apiUrl } from "@/app/lib/api";
 import BarChart from "@/app/components/lt/BarChart";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
+import Spinner from "@/app/components/lt/Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -105,7 +106,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!stats) return <p style={{ color: C.muted }}>Cargando...</p>;
+  if (!stats) return <Spinner label="Cargando dashboard..." />;
 
   const metrics = [
     { label: "Estudiantes activos", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante&activo=true" },

@@ -25,6 +25,7 @@ function ReportesPage() {
   const [tab, setTab] = useState(search.get("tab") || "asistencia");
   const cambiarTab = (nuevo) => {
     setTab(nuevo);
+    setBuscarEnResultados("");
     const params = new URLSearchParams(search.toString());
     params.set("tab", nuevo);
     router.replace(`/admin/reportes?${params.toString()}`, { scroll: false });
@@ -44,6 +45,7 @@ function ReportesPage() {
   const [ventana, setVentana] = useState("30");
   const [exportando, setExportando] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [buscarEnResultados, setBuscarEnResultados] = useState("");
 
   useEffect(() => {
     api("/api/admin/usuarios?rol=estudiante").then(setEstudiantes);
@@ -139,6 +141,15 @@ function ReportesPage() {
     setHasta("");
   };
 
+  const filasFiltradas = (() => {
+    const rows = datos[tab];
+    if (!buscarEnResultados.trim() || !rows.length) return rows;
+    const q = buscarEnResultados.toLowerCase();
+    return rows.filter(r =>
+      Object.values(r).some(v => String(v ?? "").toLowerCase().includes(q))
+    );
+  })();
+
   const filtrosAplicables = ["asistencia", "inscripciones", "evaluaciones"].includes(tab);
   const mostrarPrograma = ["asistencia", "inscripciones", "evaluaciones"].includes(tab);
   const mostrarProfesor = ["asistencia", "evaluaciones"].includes(tab);
@@ -168,9 +179,21 @@ function ReportesPage() {
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
         <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.head }}>{titulos[tab]}</h3>
-            <span style={{ fontSize: 12, color: C.muted }}>({datos[tab].length} registros)</span>
+            <span style={{ fontSize: 12, color: C.muted }}>
+              ({buscarEnResultados ? `${filasFiltradas.length} de ${datos[tab].length}` : `${datos[tab].length}`} registros)
+            </span>
+            {datos[tab].length > 5 && (
+              <input
+                type="search"
+                placeholder="Buscar en resultados..."
+                value={buscarEnResultados}
+                onChange={(e) => setBuscarEnResultados(e.target.value)}
+                aria-label="Buscar dentro del reporte"
+                style={{ ...selStyle, fontSize: 12, minWidth: 180 }}
+              />
+            )}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {filtrosAplicables && (
@@ -222,6 +245,10 @@ function ReportesPage() {
           <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>
             {tab === "desercion" ? "No hay estudiantes en riesgo identificados con los criterios actuales." : "Sin datos."}
           </p>
+        ) : filasFiltradas.length === 0 ? (
+          <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>
+            Sin coincidencias para &quot;{buscarEnResultados}&quot;.
+          </p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -231,7 +258,7 @@ function ReportesPage() {
                 </tr>
               </thead>
               <tbody>
-                {datos[tab].map((r, i) => (
+                {filasFiltradas.map((r, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid ${C.divider}` }}>
                     {Object.keys(datos[tab][0]).map(h => (
                       <td key={h} style={td}>{

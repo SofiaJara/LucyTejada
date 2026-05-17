@@ -26,6 +26,13 @@ export default function AdminProgramasPage() {
   const cargar = () => api("/api/programas?incluirInactivos=true").then(setProgramas);
   useEffect(() => { cargar(); }, []);
 
+  useEffect(() => {
+    if (!editar) return;
+    const h = (e) => { if (e.key === "Escape") setEditar(null); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [editar]);
+
   const categorias = Array.from(new Set(programas.map(p => p.categoria))).sort();
   const programasFiltrados = programas.filter(p => {
     if (categoriaFiltro && p.categoria !== categoriaFiltro) return false;

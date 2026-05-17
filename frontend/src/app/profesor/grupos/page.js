@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/app/lib/api";
+import Spinner from "@/app/components/lt/Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -37,7 +38,7 @@ function GruposPage() {
 
   const grupo = grupos.find(g => g.id === selected);
 
-  if (loading) return <p style={{ color: C.muted }}>Cargando...</p>;
+  if (loading) return <Spinner label="Cargando grupos..." />;
 
   if (grupos.length === 0) {
     return (

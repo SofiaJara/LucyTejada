@@ -43,6 +43,8 @@ function AdminUsuariosPage() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [modal, setModal] = useState({ open: false });
   const [loading, setLoading] = useState(false);
+  const [pagina, setPagina] = useState(0);
+  const porPagina = 20;
 
   useEffect(() => {
     api("/api/grupos").then(setGrupos).catch(() => setGrupos([]));
@@ -62,7 +64,10 @@ function AdminUsuariosPage() {
     const q = params.toString() ? `?${params.toString()}` : "";
     api(`/api/admin/usuarios${q}`).then(setUsuarios);
   };
-  useEffect(() => { cargar(); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, minEdad, maxEdad, busqueda]);
+  useEffect(() => { cargar(); setPagina(0); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, minEdad, maxEdad, busqueda]);
+
+  const totalPaginas = Math.max(1, Math.ceil(usuarios.length / porPagina));
+  const paginados = usuarios.slice(pagina * porPagina, (pagina + 1) * porPagina);
 
   const abrirNuevo = () => { setEditar("nuevo"); setForm(empty); };
   const abrirEditar = (u) => {
@@ -203,7 +208,7 @@ function AdminUsuariosPage() {
             </tr>
           </thead>
           <tbody>
-            {usuarios.map(u => (
+            {paginados.map(u => (
               <tr key={u.id} style={{ borderBottom: `1px solid ${C.divider}` }}>
                 <td style={td}>{u.documento}</td>
                 <td style={{ ...td, fontWeight: 500 }}>{u.nombre} {u.apellido}</td>
@@ -234,12 +239,33 @@ function AdminUsuariosPage() {
           <p style={{ padding: 22, margin: 0, textAlign: "center", color: C.muted, fontSize: 14 }}>Sin usuarios.</p>
         )}
       </div>
+
+      {usuarios.length > porPagina && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, fontSize: 13, color: C.muted }}>
+          <span>Página {pagina + 1} de {totalPaginas} · mostrando {paginados.length} de {usuarios.length}</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => setPagina(p => Math.max(0, p - 1))} disabled={pagina === 0}
+              style={{ ...btnGhost, padding: "6px 14px", opacity: pagina === 0 ? 0.45 : 1, cursor: pagina === 0 ? "not-allowed" : "pointer" }}>
+              ← Anterior
+            </button>
+            <button onClick={() => setPagina(p => Math.min(totalPaginas - 1, p + 1))} disabled={pagina >= totalPaginas - 1}
+              style={{ ...btnGhost, padding: "6px 14px", opacity: pagina >= totalPaginas - 1 ? 0.45 : 1, cursor: pagina >= totalPaginas - 1 ? "not-allowed" : "pointer" }}>
+              Siguiente →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function UsuarioForm({ form, setForm, esNuevo, onCancel, onSubmit, loading }) {
   const oc = (e) => setForm({ ...form, [e.target.name]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onCancel]);
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 800, background: "rgba(28,38,32,0.45)",

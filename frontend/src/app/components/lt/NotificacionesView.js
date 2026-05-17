@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/app/lib/api";
+import Spinner from "./Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -71,7 +72,7 @@ export default function NotificacionesView({ titulo = "Notificaciones", descripc
       </div>
 
       {loading ? (
-        <p style={{ color: C.muted }}>Cargando...</p>
+        <Spinner label="Cargando notificaciones..." />
       ) : filtered.length === 0 ? (
         <div style={{ padding: 40, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, textAlign: "center", color: C.muted }}>
           No tienes notificaciones {active !== "todas" ? "en esta categoría" : ""}.
@@ -79,13 +80,28 @@ export default function NotificacionesView({ titulo = "Notificaciones", descripc
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map(n => (
-            <div key={n.id} onClick={() => !n.leida && marcarLeida(n.id)} style={{
-              background: C.card,
-              border: `1px solid ${!n.leida ? C.borderUnread : C.border}`,
-              borderRadius: 6, padding: "14px 16px",
-              display: "flex", gap: 14, alignItems: "flex-start",
-              cursor: !n.leida ? "pointer" : "default",
-            }}>
+            <div
+              key={n.id}
+              onClick={() => !n.leida && marcarLeida(n.id)}
+              onKeyDown={(e) => {
+                if (!n.leida && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  marcarLeida(n.id);
+                }
+              }}
+              role={!n.leida ? "button" : undefined}
+              tabIndex={!n.leida ? 0 : undefined}
+              aria-label={!n.leida ? `Marcar como leída: ${n.titulo}` : undefined}
+              style={{
+                background: C.card,
+                border: `1px solid ${!n.leida ? C.borderUnread : C.border}`,
+                borderRadius: 6, padding: "14px 16px",
+                display: "flex", gap: 14, alignItems: "flex-start",
+                cursor: !n.leida ? "pointer" : "default",
+                outline: "none",
+              }}
+              onFocus={(e) => { if (!n.leida) e.currentTarget.style.boxShadow = `0 0 0 2px ${C.btn}40`; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}>
               <div style={{
                 width: 10, height: 10, borderRadius: "50%", flexShrink: 0, marginTop: 5,
                 background: !n.leida ? C.unread : "transparent",

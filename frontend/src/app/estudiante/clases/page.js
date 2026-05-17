@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/AuthContext";
+import Spinner from "@/app/components/lt/Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -46,7 +47,7 @@ export default function ClasesPage() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  if (loading) return <p style={{ color: C.muted }}>Cargando...</p>;
+  if (loading) return <Spinner label="Cargando clases..." />;
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>

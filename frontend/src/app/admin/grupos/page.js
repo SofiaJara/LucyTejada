@@ -57,6 +57,18 @@ function AdminGruposPage() {
   };
   useEffect(() => { cargar(); }, []);
 
+  useEffect(() => {
+    if (!editar && !inscribir) return;
+    const h = (e) => {
+      if (e.key === "Escape") {
+        if (inscribir) setInscribir(null);
+        else if (editar) setEditar(null);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [editar, inscribir]);
+
   const gruposFiltrados = grupos.filter(g => {
     if (programaFiltro && g.programaId !== Number(programaFiltro)) return false;
     if (activoFiltro === "true" && !g.activo) return false;

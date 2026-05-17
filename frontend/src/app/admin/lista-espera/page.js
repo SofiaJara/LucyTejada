@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/lib/api";
 import ConfirmModal from "@/app/components/lt/ConfirmModal";
+import Spinner from "@/app/components/lt/Spinner";
 
 const C = {
   btn: "#3A6048", btnT: "#fff",
@@ -77,7 +78,7 @@ export default function ListaEsperaPage() {
       </p>
 
       {loading ? (
-        <p style={{ color: C.muted }}>Cargando...</p>
+        <Spinner label="Cargando lista de espera..." />
       ) : grupos.length === 0 ? (
         <div style={{ padding: 36, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, textAlign: "center", color: C.muted, fontSize: 14 }}>
           No hay estudiantes en lista de espera actualmente.
