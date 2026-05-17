@@ -98,7 +98,7 @@ async function main() {
   // Grupos
   const grupoPianoA = await prisma.grupo.create({
     data: {
-      nombre: 'Grupo A', cupoMaximo: 15, totalClases: 19,
+      nombre: 'Grupo A', cupoMaximo: 4, totalClases: 19,
       horario: 'Lunes y miércoles · 8:00 am', salon: 'Salón 3 · Bloque B',
       programaId: piano.id, profesorId: prof1.id,
     },
@@ -112,7 +112,7 @@ async function main() {
   });
   const grupoGuitarraC = await prisma.grupo.create({
     data: {
-      nombre: 'Grupo C', cupoMaximo: 12, totalClases: 19,
+      nombre: 'Grupo C', cupoMaximo: 2, totalClases: 19,
       horario: 'Mar y jue · 10:00 am', salon: 'Salón 1',
       programaId: guitarra.id, profesorId: prof2.id,
     },
@@ -139,10 +139,49 @@ async function main() {
     },
   });
 
-  // Inscripciones
+  // Estudiantes adicionales para llenar grupos y poblar lista de espera
+  const extras = [
+    { documento: '2026004400', nombre: 'Valentina', apellido: 'Restrepo',    correo: 'valentina.restrepo@correo.com', genero: 'Femenino',  barrio: 'Cuba',         telefono: '3105551001' },
+    { documento: '2026004500', nombre: 'Mateo',     apellido: 'Cardona',     correo: 'mateo.cardona@correo.com',      genero: 'Masculino', barrio: 'Pinares',      telefono: '3105551002' },
+    { documento: '2026004600', nombre: 'Isabella',  apellido: 'Henao',       correo: 'isabella.henao@correo.com',     genero: 'Femenino',  barrio: 'San Joaquín',  telefono: '3105551003' },
+    { documento: '2026004700', nombre: 'Samuel',    apellido: 'Ocampo',      correo: 'samuel.ocampo@correo.com',      genero: 'Masculino', barrio: 'El Poblado',   telefono: '3105551004' },
+    { documento: '2026004800', nombre: 'Camila',    apellido: 'Aristizábal', correo: 'camila.aristizabal@correo.com', genero: 'Femenino',  barrio: 'Boston',       telefono: '3105551005' },
+    { documento: '2026004900', nombre: 'Sebastián', apellido: 'Mejía',       correo: 'sebastian.mejia@correo.com',    genero: 'Masculino', barrio: 'La Aurora',    telefono: '3105551006' },
+    { documento: '2026005000', nombre: 'Lucía',     apellido: 'Bedoya',      correo: 'lucia.bedoya@correo.com',       genero: 'Femenino',  barrio: 'Álamos',       telefono: '3105551007' },
+    { documento: '2026005100', nombre: 'Daniel',    apellido: 'Salazar',     correo: 'daniel.salazar@correo.com',     genero: 'Masculino', barrio: 'Belmonte',     telefono: '3105551008' },
+    { documento: '2026005200', nombre: 'Sofía',     apellido: 'Quintero',    correo: 'sofia.quintero@correo.com',     genero: 'Femenino',  barrio: 'Maraya',       telefono: '3105551009' },
+  ];
+  const extraStudents = [];
+  for (const data of extras) {
+    extraStudents.push(await prisma.usuario.create({
+      data: {
+        ...data, contrasena: hash('estudiante123'),
+        rol: 'estudiante', ciudad: 'Pereira',
+        fechaNacimiento: new Date('2007-09-12'),
+      },
+    }));
+  }
+  const [valentina, mateo, isabella, samuel, camila, sebastian, lucia, daniel, sofia] = extraStudents;
+
+  // Inscripciones activas (FIFO importa: fechaInscripcion se asigna en orden)
   await prisma.inscripcion.create({ data: { estudianteId: estudiante1.id, grupoId: grupoPianoA.id } });
   await prisma.inscripcion.create({ data: { estudianteId: estudiante2.id, grupoId: grupoPianoA.id } });
+  await prisma.inscripcion.create({ data: { estudianteId: valentina.id,   grupoId: grupoPianoA.id } });
+  await prisma.inscripcion.create({ data: { estudianteId: mateo.id,       grupoId: grupoPianoA.id } });
+  // Piano A queda lleno (4/4). Los siguientes entran a lista de espera en orden FIFO.
+  await prisma.inscripcion.create({ data: { estudianteId: isabella.id, grupoId: grupoPianoA.id, estado: 'lista_espera' } });
+  await prisma.inscripcion.create({ data: { estudianteId: samuel.id,   grupoId: grupoPianoA.id, estado: 'lista_espera' } });
+  await prisma.inscripcion.create({ data: { estudianteId: camila.id,   grupoId: grupoPianoA.id, estado: 'lista_espera' } });
+  await prisma.inscripcion.create({ data: { estudianteId: sebastian.id, grupoId: grupoPianoA.id, estado: 'lista_espera' } });
+
   await prisma.inscripcion.create({ data: { estudianteId: estudiante3.id, grupoId: grupoGuitarraB.id } });
+
+  // Guitarra C lleno (2/2) con lista de espera
+  await prisma.inscripcion.create({ data: { estudianteId: lucia.id,  grupoId: grupoGuitarraC.id } });
+  await prisma.inscripcion.create({ data: { estudianteId: daniel.id, grupoId: grupoGuitarraC.id } });
+  await prisma.inscripcion.create({ data: { estudianteId: sofia.id,     grupoId: grupoGuitarraC.id, estado: 'lista_espera' } });
+  await prisma.inscripcion.create({ data: { estudianteId: valentina.id, grupoId: grupoGuitarraC.id, estado: 'lista_espera' } });
+  await prisma.inscripcion.create({ data: { estudianteId: mateo.id,     grupoId: grupoGuitarraC.id, estado: 'lista_espera' } });
 
   // Crear una clase y asistencia ejemplo
   const clase1 = await prisma.clase.create({
