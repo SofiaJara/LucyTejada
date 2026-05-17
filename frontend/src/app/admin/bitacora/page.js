@@ -64,15 +64,16 @@ export default function BitacoraPage() {
         Registro de actividad: inicios de sesión, creación, modificación y eliminación de información.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1fr 1fr auto auto auto auto", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16, alignItems: "center" }}>
         <input
           value={usuario}
           onChange={(e) => setUsuario(e.target.value)}
           placeholder="Buscar por correo de usuario..."
-          style={input}
+          style={{ ...input, flex: "2 1 220px", minWidth: 200 }}
+          aria-label="Buscar por correo de usuario"
           title="Filtra por coincidencia parcial en el correo registrado"
         />
-        <select value={accion} onChange={(e) => setAccion(e.target.value)} style={input}>
+        <select value={accion} onChange={(e) => setAccion(e.target.value)} style={{ ...input, flex: "1 1 140px", minWidth: 140 }} aria-label="Filtrar por acción">
           <option value="">Todas las acciones</option>
           <option value="login">Login</option>
           <option value="logout">Logout</option>
@@ -80,7 +81,7 @@ export default function BitacoraPage() {
           <option value="update">Actualizar</option>
           <option value="delete">Eliminar</option>
         </select>
-        <select value={entidad} onChange={(e) => setEntidad(e.target.value)} style={input}>
+        <select value={entidad} onChange={(e) => setEntidad(e.target.value)} style={{ ...input, flex: "1 1 160px", minWidth: 150 }} aria-label="Filtrar por entidad">
           <option value="">Todas las entidades</option>
           <option value="usuario">Usuario</option>
           <option value="programa">Programa</option>
@@ -93,17 +94,17 @@ export default function BitacoraPage() {
           <option value="backup">Backup</option>
           <option value="reset_solicitud">Reset de contraseña</option>
         </select>
-        <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={input} title="Desde" />
-        <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={input} title="Hasta" />
+        <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={{ ...input, flex: "1 1 140px", minWidth: 130 }} title="Desde" aria-label="Fecha desde" />
+        <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={{ ...input, flex: "1 1 140px", minWidth: 130 }} title="Hasta" aria-label="Fecha hasta" />
         <button
           onClick={limpiarFiltros}
           disabled={!hayFiltros}
           style={{ ...btnExp, color: hayFiltros ? "#4a5a52" : "#bbb", borderColor: hayFiltros ? "#b8cdc0" : "#e0e6e0", cursor: hayFiltros ? "pointer" : "not-allowed" }}
           title="Limpiar filtros"
         >Limpiar</button>
-        <button onClick={() => exportCSV("bitacora.csv", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>CSV</button>
-        <button onClick={() => exportXLS("bitacora.xls", exportData, "Bitácora")} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>Excel</button>
-        <button onClick={() => exportPDF("Bitácora de Auditoría", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1 }}>PDF</button>
+        <button onClick={() => exportCSV("bitacora.csv", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1, cursor: registros.length === 0 ? "not-allowed" : "pointer" }} aria-label="Exportar bitácora como CSV">CSV</button>
+        <button onClick={() => exportXLS("bitacora.xls", exportData, "Bitácora")} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1, cursor: registros.length === 0 ? "not-allowed" : "pointer" }} aria-label="Exportar bitácora como Excel">Excel</button>
+        <button onClick={() => exportPDF("Bitácora de Auditoría", exportData)} disabled={registros.length === 0} style={{ ...btnExp, opacity: registros.length === 0 ? 0.55 : 1, cursor: registros.length === 0 ? "not-allowed" : "pointer" }} aria-label="Exportar bitácora como PDF">PDF</button>
       </div>
 
       <p style={{ fontSize: 13, color: C.muted, margin: "0 0 8px" }}>

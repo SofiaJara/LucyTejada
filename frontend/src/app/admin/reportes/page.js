@@ -232,9 +232,9 @@ function ReportesPage() {
                 <option value="">Sin límite</option>
               </select>
             )}
-            <button onClick={() => exportar("csv")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>CSV</button>
-            <button onClick={() => exportar("xlsx")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>Excel</button>
-            <button onClick={() => exportar("pdf")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1 }}>PDF</button>
+            <button onClick={() => exportar("csv")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1, cursor: exportando ? "wait" : (datos[tab].length === 0 ? "not-allowed" : "pointer") }} aria-label="Exportar como CSV">{exportando ? "..." : "CSV"}</button>
+            <button onClick={() => exportar("xlsx")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1, cursor: exportando ? "wait" : (datos[tab].length === 0 ? "not-allowed" : "pointer") }} aria-label="Exportar como Excel">{exportando ? "..." : "Excel"}</button>
+            <button onClick={() => exportar("pdf")} disabled={exportando || datos[tab].length === 0} style={{ ...btnExp, opacity: exportando || datos[tab].length === 0 ? 0.55 : 1, cursor: exportando ? "wait" : (datos[tab].length === 0 ? "not-allowed" : "pointer") }} aria-label="Exportar como PDF">{exportando ? "..." : "PDF"}</button>
           </div>
         </div>
         {aviso && (
