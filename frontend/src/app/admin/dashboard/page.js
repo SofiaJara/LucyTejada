@@ -24,13 +24,18 @@ export default function AdminDashboard() {
   const [confirmRestore, setConfirmRestore] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [evalsDist, setEvalsDist] = useState([]);
+  const [loadError, setLoadError] = useState("");
 
   const cargarBackups = () => api("/api/admin/backups").then(setBackups).catch(() => {});
 
   useEffect(() => {
-    api("/api/admin/dashboard").then(setStats).catch(console.error);
-    api("/api/admin/reportes/asistencia").then(setReporteAsist).catch(console.error);
-    api("/api/admin/reportes/inscripciones").then(setReporteInscr).catch(console.error);
+    const handleErr = (label) => (e) => {
+      console.error(label, e);
+      setLoadError(prev => prev || `No se pudo cargar ${label}. ${e?.message || ""}`.trim());
+    };
+    api("/api/admin/dashboard").then(setStats).catch(handleErr("el resumen"));
+    api("/api/admin/reportes/asistencia").then(setReporteAsist).catch(handleErr("el reporte de asistencia"));
+    api("/api/admin/reportes/inscripciones").then(setReporteInscr).catch(handleErr("el reporte de inscripciones"));
     api("/api/admin/reportes/evaluaciones").then(evals => {
       const orden = ["Excelente", "Bueno", "Regular", "Deficiente"];
       const conteo = orden.map(v => ({
@@ -38,7 +43,7 @@ export default function AdminDashboard() {
         count: evals.filter(e => e.valoracion === v).length,
       }));
       setEvalsDist(conteo);
-    }).catch(console.error);
+    }).catch(handleErr("la distribución de evaluaciones"));
     cargarBackups();
   }, []);
 
@@ -106,7 +111,24 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!stats) return <Spinner label="Cargando dashboard..." />;
+  if (!stats) {
+    if (loadError) {
+      return (
+        <div role="alert" style={{
+          background: "#fdf1ec", border: "1px solid #f0b6a5", color: "#a8442e",
+          padding: "16px 18px", borderRadius: 8, fontSize: 14, maxWidth: 640,
+        }}>
+          <strong style={{ display: "block", marginBottom: 4 }}>No se pudo cargar el panel</strong>
+          {loadError}
+          <button onClick={() => window.location.reload()} style={{
+            marginTop: 10, padding: "6px 14px", borderRadius: 6, border: "1px solid #a8442e",
+            background: "#fff", color: "#a8442e", fontWeight: 600, cursor: "pointer", fontSize: 13,
+          }}>Reintentar</button>
+        </div>
+      );
+    }
+    return <Spinner label="Cargando dashboard..." />;
+  }
 
   const metrics = [
     { label: "Estudiantes activos", value: stats.totalEstudiantes, href: "/admin/usuarios?rol=estudiante&activo=true" },
@@ -150,6 +172,14 @@ export default function AdminDashboard() {
       />
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.head, margin: "0 0 6px" }}>Panel de administración</h2>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 22px" }}>Resumen general del Centro Cultural Lucy Tejada</p>
+      {loadError && (
+        <div role="alert" style={{
+          background: "#fdf1ec", border: "1px solid #f0b6a5", color: "#a8442e",
+          padding: "10px 14px", borderRadius: 6, fontSize: 13, marginBottom: 16,
+        }}>
+          {loadError}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
         {metrics.map(m => (

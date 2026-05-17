@@ -87,8 +87,11 @@ function LoginPageInner() {
             </div>
           )}
           <input
+            id="login-correo"
             type="email"
             placeholder="correo electrónico"
+            aria-label="Correo electrónico"
+            autoComplete="email"
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
             disabled={loading}
@@ -99,8 +102,11 @@ function LoginPageInner() {
             }}
           />
           <input
+            id="login-contrasena"
             type="password"
             placeholder="contraseña"
+            aria-label="Contraseña"
+            autoComplete="current-password"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
             disabled={loading}

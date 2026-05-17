@@ -114,56 +114,56 @@ export default function RegisterPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div>
-            <label style={labelStyle}>Documento *</label>
-            <input name="documento" value={data.documento} onChange={onChange} style={inputStyle} placeholder="CC 1234567890" required />
+            <label htmlFor="reg-documento" style={labelStyle}>Documento *</label>
+            <input id="reg-documento" name="documento" value={data.documento} onChange={onChange} style={inputStyle} placeholder="CC 1234567890" required autoComplete="off" />
           </div>
           <div>
-            <label style={labelStyle}>Fecha de nacimiento</label>
-            <input name="fechaNacimiento" type="date" value={data.fechaNacimiento} onChange={onChange} style={inputStyle} />
+            <label htmlFor="reg-fechaNacimiento" style={labelStyle}>Fecha de nacimiento</label>
+            <input id="reg-fechaNacimiento" name="fechaNacimiento" type="date" value={data.fechaNacimiento} onChange={onChange} style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Nombre *</label>
-            <input name="nombre" value={data.nombre} onChange={onChange} style={inputStyle} required />
+            <label htmlFor="reg-nombre" style={labelStyle}>Nombre *</label>
+            <input id="reg-nombre" name="nombre" value={data.nombre} onChange={onChange} style={inputStyle} required autoComplete="given-name" />
           </div>
           <div>
-            <label style={labelStyle}>Apellido *</label>
-            <input name="apellido" value={data.apellido} onChange={onChange} style={inputStyle} required />
+            <label htmlFor="reg-apellido" style={labelStyle}>Apellido *</label>
+            <input id="reg-apellido" name="apellido" value={data.apellido} onChange={onChange} style={inputStyle} required autoComplete="family-name" />
           </div>
           <div style={{ gridColumn: "1 / 3" }}>
-            <label style={labelStyle}>Correo electrónico *</label>
-            <input name="correo" type="email" value={data.correo} onChange={onChange} style={inputStyle} required />
+            <label htmlFor="reg-correo" style={labelStyle}>Correo electrónico *</label>
+            <input id="reg-correo" name="correo" type="email" value={data.correo} onChange={onChange} style={inputStyle} required autoComplete="email" />
           </div>
           <div>
-            <label style={labelStyle}>Contraseña *</label>
-            <input name="contrasena" type="password" value={data.contrasena} onChange={onChange} style={inputStyle} required />
+            <label htmlFor="reg-contrasena" style={labelStyle}>Contraseña *</label>
+            <input id="reg-contrasena" name="contrasena" type="password" value={data.contrasena} onChange={onChange} style={inputStyle} required autoComplete="new-password" />
           </div>
           <div>
-            <label style={labelStyle}>Confirmar contraseña *</label>
-            <input name="contrasena2" type="password" value={data.contrasena2} onChange={onChange} style={inputStyle} required />
+            <label htmlFor="reg-contrasena2" style={labelStyle}>Confirmar contraseña *</label>
+            <input id="reg-contrasena2" name="contrasena2" type="password" value={data.contrasena2} onChange={onChange} style={inputStyle} required autoComplete="new-password" />
           </div>
           <div>
-            <label style={labelStyle}>Teléfono</label>
-            <input name="telefono" value={data.telefono} onChange={onChange} style={inputStyle} />
+            <label htmlFor="reg-telefono" style={labelStyle}>Teléfono</label>
+            <input id="reg-telefono" name="telefono" value={data.telefono} onChange={onChange} style={inputStyle} autoComplete="tel" />
           </div>
           <div>
-            <label style={labelStyle}>Género</label>
-            <select name="genero" value={data.genero} onChange={onChange} style={inputStyle}>
+            <label htmlFor="reg-genero" style={labelStyle}>Género</label>
+            <select id="reg-genero" name="genero" value={data.genero} onChange={onChange} style={inputStyle}>
               <option>Masculino</option>
               <option>Femenino</option>
               <option>Otro</option>
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Ciudad</label>
-            <input name="ciudad" value={data.ciudad} onChange={onChange} style={inputStyle} />
+            <label htmlFor="reg-ciudad" style={labelStyle}>Ciudad</label>
+            <input id="reg-ciudad" name="ciudad" value={data.ciudad} onChange={onChange} style={inputStyle} autoComplete="address-level2" />
           </div>
           <div>
-            <label style={labelStyle}>Barrio</label>
-            <input name="barrio" value={data.barrio} onChange={onChange} style={inputStyle} />
+            <label htmlFor="reg-barrio" style={labelStyle}>Barrio</label>
+            <input id="reg-barrio" name="barrio" value={data.barrio} onChange={onChange} style={inputStyle} />
           </div>
           <div style={{ gridColumn: "1 / 3" }}>
-            <label style={labelStyle}>Dirección</label>
-            <input name="direccion" value={data.direccion} onChange={onChange} style={inputStyle} />
+            <label htmlFor="reg-direccion" style={labelStyle}>Dirección</label>
+            <input id="reg-direccion" name="direccion" value={data.direccion} onChange={onChange} style={inputStyle} autoComplete="street-address" />
           </div>
         </div>
 

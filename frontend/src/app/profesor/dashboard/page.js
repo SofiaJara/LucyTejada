@@ -17,6 +17,7 @@ export default function DashboardProfesorPage() {
   const [notifs, setNotifs] = useState([]);
   const [asistPorGrupo, setAsistPorGrupo] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -43,10 +44,28 @@ export default function DashboardProfesorPage() {
         );
         setAsistPorGrupo(detalles);
       }
+    }).catch((e) => {
+      console.error(e);
+      setLoadError(e?.message || "No se pudo cargar el panel.");
     }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner label="Cargando dashboard..." />;
+  if (loadError) {
+    return (
+      <div role="alert" style={{
+        background: "#fdf1ec", border: "1px solid #f0b6a5", color: "#a8442e",
+        padding: "16px 18px", borderRadius: 8, fontSize: 14, maxWidth: 600,
+      }}>
+        <strong style={{ display: "block", marginBottom: 4 }}>No se pudo cargar el panel</strong>
+        {loadError}
+        <button onClick={() => window.location.reload()} style={{
+          marginTop: 10, padding: "6px 14px", borderRadius: 6, border: "1px solid #a8442e",
+          background: "#fff", color: "#a8442e", fontWeight: 600, cursor: "pointer", fontSize: 13,
+        }}>Reintentar</button>
+      </div>
+    );
+  }
 
   const totalEstudiantes = grupos.reduce((sum, g) => sum + (g._count?.inscripciones || 0), 0);
   const totalClases = grupos.reduce((sum, g) => sum + (g._count?.clases || 0), 0);

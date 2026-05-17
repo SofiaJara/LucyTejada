@@ -40,15 +40,32 @@ export default function InformacionEstudiantePage() {
   const [perfil, setPerfil] = useState(null);
   const [evals, setEvals] = useState([]);
   const [resumen, setResumen] = useState({ presentes: 0, total: 0, porcentaje: 0 });
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    api("/api/users/me/perfil").then(setPerfil).catch(console.error);
-    api("/api/evaluaciones/mias").then(setEvals).catch(console.error);
-    api(`/api/asistencia/estudiante/${user.id}/resumen`).then(setResumen).catch(console.error);
+    const onErr = (e) => { console.error(e); setLoadError(prev => prev || (e?.message || "No se pudo cargar la información.")); };
+    api("/api/users/me/perfil").then(setPerfil).catch(onErr);
+    api("/api/evaluaciones/mias").then(setEvals).catch(onErr);
+    api(`/api/asistencia/estudiante/${user.id}/resumen`).then(setResumen).catch(onErr);
   }, [user]);
 
   if (!perfil) {
+    if (loadError) {
+      return (
+        <div role="alert" style={{
+          background: "#fdf1ec", border: "1px solid #f0b6a5", color: "#a8442e",
+          padding: "16px 18px", borderRadius: 8, fontSize: 14, maxWidth: 540,
+        }}>
+          <strong style={{ display: "block", marginBottom: 4 }}>No se pudo cargar tu información</strong>
+          {loadError}
+          <button onClick={() => window.location.reload()} style={{
+            marginTop: 10, padding: "6px 14px", borderRadius: 6, border: "1px solid #a8442e",
+            background: "#fff", color: "#a8442e", fontWeight: 600, cursor: "pointer", fontSize: 13,
+          }}>Reintentar</button>
+        </div>
+      );
+    }
     return <p style={{ color: C.muted }}>Cargando información...</p>;
   }
 

@@ -54,11 +54,13 @@ export default function ResetPage() {
         </p>
 
         <form onSubmit={enviar}>
-          <label style={{ fontSize: 13, color: C.head, fontWeight: 600, display: "block", marginBottom: 6 }}>
+          <label htmlFor="reset-correo" style={{ fontSize: 13, color: C.head, fontWeight: 600, display: "block", marginBottom: 6 }}>
             Correo
           </label>
           <input
+            id="reset-correo"
             type="email"
+            autoComplete="email"
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
             placeholder="tu.correo@lucytejada.edu.co"

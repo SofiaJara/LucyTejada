@@ -216,12 +216,19 @@ export default function AsistenciaPage() {
                         {e.nombre} {e.apellido}
                       </td>
                       <td style={{ padding: "10px 14px" }}>
-                        <button onClick={() => toggleAsistio(e.id)} style={{
-                          width: 22, height: 22, border: `2px solid ${r.asistio ? C.btn : C.border}`,
-                          borderRadius: 4, padding: 0, cursor: "pointer",
-                          fontSize: 13, color: C.btn, fontWeight: 700,
-                          background: r.asistio ? "#eef5f0" : C.card,
-                        }}>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={r.asistio}
+                          aria-label={`Marcar asistencia de ${e.nombre} ${e.apellido}`}
+                          onClick={() => toggleAsistio(e.id)}
+                          style={{
+                            width: 22, height: 22, border: `2px solid ${r.asistio ? C.btn : C.border}`,
+                            borderRadius: 4, padding: 0, cursor: "pointer",
+                            fontSize: 13, color: C.btn, fontWeight: 700,
+                            background: r.asistio ? "#eef5f0" : C.card,
+                          }}
+                        >
                           {r.asistio ? "✓" : ""}
                         </button>
                       </td>
@@ -230,6 +237,7 @@ export default function AsistenciaPage() {
                           value={r.observacion}
                           onChange={(ev) => setObs(e.id, ev.target.value)}
                           placeholder="Observación"
+                          aria-label={`Observación para ${e.nombre} ${e.apellido}`}
                           style={{
                             width: "100%", maxWidth: 280, padding: "5px 10px",
                             border: `1px solid ${C.border}`, borderRadius: 4,
