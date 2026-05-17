@@ -31,6 +31,7 @@ export default function AsistenciaPage() {
   useEffect(() => {
     if (!grupoId) return;
     setClaseId("");
+    setTema("");
     api(`/api/grupos/${grupoId}`).then(g => {
       setGrupo(g);
       // inicializar registros
@@ -51,6 +52,7 @@ export default function AsistenciaPage() {
         init[ins.estudiante.id] = { asistio: false, observacion: "" };
       });
       setRegistros(init);
+      setTema("");
       return;
     }
     const clase = await api(`/api/asistencia/clases/${id}`);
@@ -67,9 +69,10 @@ export default function AsistenciaPage() {
   };
 
   const toggleAsistio = (estudianteId) => {
+    const actual = registros[estudianteId] || { asistio: false, observacion: "" };
     setRegistros({
       ...registros,
-      [estudianteId]: { ...registros[estudianteId], asistio: !registros[estudianteId].asistio },
+      [estudianteId]: { ...actual, asistio: !actual.asistio },
     });
   };
   const marcarTodos = (valor) => {

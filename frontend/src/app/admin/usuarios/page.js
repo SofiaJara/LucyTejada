@@ -38,6 +38,7 @@ function AdminUsuariosPage() {
   const [minEdad, setMinEdad] = useState(search.get("minEdad") || "");
   const [maxEdad, setMaxEdad] = useState(search.get("maxEdad") || "");
   const [busqueda, setBusqueda] = useState(search.get("busqueda") || "");
+  const [busquedaAplicada, setBusquedaAplicada] = useState(search.get("busqueda") || "");
   const [editar, setEditar] = useState(null);
   const [form, setForm] = useState(empty);
   const [confirmDel, setConfirmDel] = useState(null);
@@ -60,11 +61,16 @@ function AdminUsuariosPage() {
     if (activoFiltro) params.set("activo", activoFiltro);
     if (minEdad) params.set("minEdad", minEdad);
     if (maxEdad) params.set("maxEdad", maxEdad);
-    if (busqueda) params.set("busqueda", busqueda);
+    if (busquedaAplicada) params.set("busqueda", busquedaAplicada);
     const q = params.toString() ? `?${params.toString()}` : "";
-    api(`/api/admin/usuarios${q}`).then(setUsuarios);
+    api(`/api/admin/usuarios${q}`).then(setUsuarios).catch(() => setUsuarios([]));
   };
-  useEffect(() => { cargar(); setPagina(0); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, minEdad, maxEdad, busqueda]);
+  // Debounce: aplicar busqueda 300ms después de la última pulsación para evitar disparar peticiones por cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setBusquedaAplicada(busqueda), 300);
+    return () => clearTimeout(t);
+  }, [busqueda]);
+  useEffect(() => { cargar(); setPagina(0); }, [rolFiltro, generoFiltro, ciudadFiltro, barrioFiltro, grupoFiltro, activoFiltro, minEdad, maxEdad, busquedaAplicada]);
 
   const totalPaginas = Math.max(1, Math.ceil(usuarios.length / porPagina));
   const paginados = usuarios.slice(pagina * porPagina, (pagina + 1) * porPagina);

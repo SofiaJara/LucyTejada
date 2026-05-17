@@ -17,9 +17,11 @@ export default function ClasesPage() {
   const [clases, setClases] = useState([]);
   const [resumen, setResumen] = useState({ presentes: 0, total: 0, porcentaje: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user) return;
+    setError("");
     Promise.all([
       api("/api/inscripciones/mias"),
       api(`/api/asistencia/estudiante/${user.id}/resumen`).catch(() => ({ presentes: 0, total: 0, porcentaje: 0 })),
@@ -28,26 +30,45 @@ export default function ClasesPage() {
         setInscripciones(data);
         setResumen(res);
         if (data.length > 0) {
-          const allClases = [];
-          for (const ins of data) {
-            const cs = await api(`/api/asistencia/grupos/${ins.grupoId}/clases`);
-            cs.forEach(c => {
-              const propia = c.asistencias?.find(a => a.estudianteId === user.id);
-              allClases.push({
-                ...c,
-                grupo: ins.grupo,
-                miAsistencia: propia ? (propia.asistio ? "presente" : "ausente") : "pendiente",
-                observacion: propia?.observacion || "",
-              });
-            });
-          }
+          const listas = await Promise.all(
+            data.map(ins =>
+              api(`/api/asistencia/grupos/${ins.grupoId}/clases`)
+                .catch(() => [])
+                .then(cs => cs.map(c => {
+                  const propia = c.asistencias?.find(a => a.estudianteId === user.id);
+                  return {
+                    ...c,
+                    grupo: ins.grupo,
+                    miAsistencia: propia ? (propia.asistio ? "presente" : "ausente") : "pendiente",
+                    observacion: propia?.observacion || "",
+                  };
+                }))
+            )
+          );
+          const allClases = listas.flat();
           setClases(allClases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
         }
       })
+      .catch((e) => setError(e?.message || "No se pudieron cargar tus clases."))
       .finally(() => setLoading(false));
   }, [user]);
 
   if (loading) return <Spinner label="Cargando clases..." />;
+  if (error) {
+    return (
+      <div role="alert" style={{
+        background: "#fdf1ec", border: "1px solid #f0b6a5", color: "#a8442e",
+        padding: "16px 18px", borderRadius: 8, fontSize: 14, maxWidth: 600,
+      }}>
+        <strong style={{ display: "block", marginBottom: 4 }}>No se pudieron cargar tus clases</strong>
+        {error}
+        <button onClick={() => window.location.reload()} style={{
+          marginTop: 10, padding: "6px 14px", borderRadius: 6, border: "1px solid #a8442e",
+          background: "#fff", color: "#a8442e", fontWeight: 600, cursor: "pointer", fontSize: 13,
+        }}>Reintentar</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
